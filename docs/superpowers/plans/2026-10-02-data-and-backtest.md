@@ -139,8 +139,11 @@ for ticker in ["AAPL", "JPM", "XOM"]:
 
 # 4. How many removed members have no Yahoo data? (sample of 40)
 removed = [t for t in all_tickers if t not in last["tickers"].split(",")][:40]
-missing = [t for t in removed
-           if yf.Ticker(t.replace(".", "-")).history(period="max", auto_adjust=True).empty]
+missing = [
+    t
+    for t in removed
+    if yf.Ticker(t.replace(".", "-")).history(period="max", auto_adjust=True).empty
+]
 print("removed sample without data:", len(missing), "of", len(removed), missing)
 ```
 
@@ -1411,8 +1414,9 @@ def rising(n=260, start=50.0, step=0.1):
 
 def test_indicator_values():
     bars = make_bars([10, 11, 12, 13, 14], volumes=[100, 200, 300, 400, 500])
-    s = StrategySettings(sma_fast=2, sma_slow=3, atr_days=2, breakout_days=3, volume_days=2,
-                         rank_days=2)
+    s = StrategySettings(
+        sma_fast=2, sma_slow=3, atr_days=2, breakout_days=3, volume_days=2, rank_days=2
+    )
     df = add_indicators(bars, s)
     last = df.iloc[-1]
     assert last["sma_fast"] == 13.5
@@ -1783,8 +1787,17 @@ import pandas as pd
 from market_agent.earnings import EarningsCalendar
 from market_agent.settings import StrategySettings
 
-REQUIRED = ["close", "volume", "sma_fast", "sma_slow", "atr", "high_close", "avg_volume_prev",
-            "avg_value", "ret_rank"]
+REQUIRED = [
+    "close",
+    "volume",
+    "sma_fast",
+    "sma_slow",
+    "atr",
+    "high_close",
+    "avg_volume_prev",
+    "avg_value",
+    "ret_rank",
+]
 
 
 @dataclass(frozen=True)
@@ -2363,7 +2376,9 @@ class Simulator:
             last_close=b.open,
         )
 
-    def _exit(self, p: Portfolio, ticker: str, day: pd.Timestamp, price: float, reason: str) -> None:
+    def _exit(
+        self, p: Portfolio, ticker: str, day: pd.Timestamp, price: float, reason: str
+    ) -> None:
         pos = p.positions.pop(ticker)
         fill = price * (1 - self.risk.slippage)
         p.cash += pos.shares * fill - self.risk.commission
@@ -2479,7 +2494,13 @@ def test_no_days_in_period_raises():
     panel, universe, earnings, spy, days = scenario()
     with pytest.raises(ValueError, match="No trading days"):
         run_backtest(
-            panel, universe, earnings, {}, spy, S, pd.Timestamp("2030-01-01"),
+            panel,
+            universe,
+            earnings,
+            {},
+            spy,
+            S,
+            pd.Timestamp("2030-01-01"),
             pd.Timestamp("2030-12-31"),
         )
 
@@ -2600,9 +2621,7 @@ def run_backtest(
         )
         signals += len(candidates)
         without_earnings += sum(not c.earnings_known for c in candidates)
-        plan_entries(
-            portfolio, candidates, equity, sectors, settings.risk, settings.strategy, day
-        )
+        plan_entries(portfolio, candidates, equity, sectors, settings.risk, settings.strategy, day)
 
     equity_series = pd.Series(dict(portfolio.equity_history), name="equity")
     bench = benchmark_close.loc[days[0] : days[-1]]
@@ -2674,7 +2693,15 @@ from market_agent.store import Store
 def save(store, fingerprint):
     day = pd.Timestamp("2022-01-03")
     store.save_backtest(
-        "test", day, day, fingerprint, {}, {"total_return": 0.1}, {}, {}, [],
+        "test",
+        day,
+        day,
+        fingerprint,
+        {},
+        {"total_return": 0.1},
+        {},
+        {},
+        [],
         pd.Series([1.0], index=[day]),
     )
 
@@ -2708,7 +2735,10 @@ def aaa_bars():
 
 
 class Prices:
-    frames = {"AAA": aaa_bars(), "SPY": make_bars([400 + 0.2 * i for i in range(N)], start="2020-06-01")}
+    frames = {
+        "AAA": aaa_bars(),
+        "SPY": make_bars([400 + 0.2 * i for i in range(N)], start="2020-06-01"),
+    }
 
     def fetch(self, ticker, start, end):
         if ticker not in self.frames:
@@ -2973,16 +3003,25 @@ def print_result(period: str, r: BacktestResult) -> None:
     m, b, n = r.metrics, r.benchmark, r.notes
     print(f"Backtest ({period}) {r.start:%Y-%m-%d} to {r.end:%Y-%m-%d}")
     print(f"{'':16}{'Strategy':>12}{'SPY':>12}")
-    for key, label in (("total_return", "Total return"), ("cagr", "Per year"),
-                       ("max_drawdown", "Worst fall")):
+    for key, label in (
+        ("total_return", "Total return"),
+        ("cagr", "Per year"),
+        ("max_drawdown", "Worst fall"),
+    ):
         print(f"{label:16}{_pct(m[key]):>12}{_pct(b[key]):>12}")
-    print(f"Trades {m['trades']}, win rate {100 * m['win_rate']:.0f}%, "
-          f"average win {_pct(m['avg_win'])}, average loss {_pct(m['avg_loss'])}, "
-          f"invested {100 * m['exposure']:.0f}% of days, {r.open_positions} still open")
-    print(f"Universe members without data: {len(n['tickers_without_data'])} of "
-          f"{n['tickers_in_universe']} (results are biased upwards by roughly that share)")
-    print(f"Signals taken without earnings dates: {n['signals_without_earnings_data']} of "
-          f"{n['signals']}; bad price days skipped: {n['excluded_bad_days']}")
+    print(
+        f"Trades {m['trades']}, win rate {100 * m['win_rate']:.0f}%, "
+        f"average win {_pct(m['avg_win'])}, average loss {_pct(m['avg_loss'])}, "
+        f"invested {100 * m['exposure']:.0f}% of days, {r.open_positions} still open"
+    )
+    print(
+        f"Universe members without data: {len(n['tickers_without_data'])} of "
+        f"{n['tickers_in_universe']} (results are biased upwards by roughly that share)"
+    )
+    print(
+        f"Signals taken without earnings dates: {n['signals_without_earnings_data']} of "
+        f"{n['signals']}; bad price days skipped: {n['excluded_bad_days']}"
+    )
     for event in n["circuit_breaker_events"]:
         print(f"Circuit breaker: {event}")
 ```
