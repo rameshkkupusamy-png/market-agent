@@ -23,7 +23,7 @@ def position_size(
 ) -> int:
     """Shares so that a stop-out loses risk_per_trade of equity, within the size and cash caps."""
     risk_per_share = strategy.stop_atr * atr
-    if risk_per_share <= 0 or price <= 0:
+    if not (risk_per_share > 0 and price > 0):
         return 0
     by_risk = math.floor(risk.risk_per_trade * equity / risk_per_share)
     by_cap = math.floor(risk.max_position_pct * equity / price)

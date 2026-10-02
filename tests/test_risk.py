@@ -63,3 +63,17 @@ def test_halted_portfolio_opens_nothing():
     p.halted = True
     assert plan_entries(p, [candidate("A")], 10_000, {}, R, S, DAY) == ["circuit breaker on"]
     assert p.orders == []
+
+
+def test_size_zero_for_nan_inputs():
+    nan = float("nan")
+    assert position_size(10_000, 10_000, 100.0, nan, R, S) == 0
+    assert position_size(10_000, 10_000, nan, 2.0, R, S) == 0
+
+
+def test_plan_entries_sets_aside_cash_for_earlier_orders():
+    p = Portfolio("rules-only", 1_500)
+    notes = plan_entries(p, [candidate("A"), candidate("B"), candidate("C")], 10_000, {}, R, S, DAY)
+    # A takes 10 × 100.1 + 1 = 1,002; B only fits (498 − 1) / 100.1 = 4; C has nothing left
+    assert [(o.ticker, o.shares) for o in p.orders] == [("A", 10), ("B", 4)]
+    assert notes == ["C: not enough cash"]
