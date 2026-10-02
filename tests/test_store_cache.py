@@ -1,5 +1,7 @@
 from datetime import date
+from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -108,3 +110,54 @@ def test_earnings_cache_round_trip(store):
     loaded = store.load_earnings()
     assert loaded["AAPL"] == history
     assert loaded["NEW"] == EarningsHistory([], None)
+
+
+def test_price_cache_treats_empty_frame_as_missing(store):
+    source = FakePrices({"EMPTY": make_bars([10]).iloc[0:0]})
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2))
+    first = cache.update("EMPTY", date(2014, 1, 1))
+    repeat = cache.update("EMPTY", date(2014, 1, 1))
+    assert first is False
+    assert repeat is first
+    assert len(source.calls) == 1
+    assert store.tickers_with_prices() == []
+    assert store.missing_tickers() == ["EMPTY"]
+
+
+def test_backtest_round_trip_with_numpy_and_timestamp_values(store):
+    trade = SimpleNamespace(
+        ticker="AAPL",
+        entry_day=pd.Timestamp("2024-01-02"),
+        entry_price=10.0,
+        exit_day=pd.Timestamp("2024-01-05"),
+        exit_price=11.0,
+        shares=5,
+        exit_reason="target",
+        pnl=5.0,
+    )
+    equity = pd.Series([100.0, 105.0], index=pd.bdate_range("2024-01-02", periods=2))
+    metrics = {
+        "trades": np.int64(3),
+        "cagr": np.float64(0.12),
+        "max_drawdown_day": pd.Timestamp("2024-03-01"),
+    }
+    benchmark = {"cagr": np.float64(0.08), "days": np.int32(250)}
+    backtest_id = store.save_backtest(
+        "2024",
+        pd.Timestamp("2024-01-02"),
+        pd.Timestamp("2024-12-31"),
+        "abc123",
+        {"risk": {"max_positions": 5}},
+        metrics,
+        benchmark,
+        {},
+        [trade],
+        equity,
+    )
+    runs = store.backtest_runs("2024")
+    assert [r["id"] for r in runs] == [backtest_id]
+    run = runs[0]
+    assert run["fingerprint"] == "abc123"
+    assert run["metrics"] == {"trades": 3, "cagr": 0.12, "max_drawdown_day": "2024-03-01 00:00:00"}
+    assert run["benchmark"] == {"cagr": 0.08, "days": 250}
+    assert store.backtest_runs("2025") == []

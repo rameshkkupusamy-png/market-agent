@@ -32,6 +32,8 @@ class PriceCache:
             return self._store.load_prices(ticker) is not None
         try:
             bars = self._source.fetch(ticker, pd.Timestamp(start), pd.Timestamp(today))
+            if bars.empty:
+                raise NoData(ticker)
         except NoData:
             log.info("%s: no price data", ticker)
             self._store.mark_missing(ticker, stamp)

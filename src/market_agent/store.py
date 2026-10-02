@@ -35,6 +35,13 @@ def _day(value: pd.Timestamp) -> str:
     return value.strftime("%Y-%m-%d")
 
 
+def _json_default(value: Any) -> Any:
+    """Keep numpy scalars as JSON numbers; write anything else (e.g. Timestamps) as text."""
+    if hasattr(value, "item") and not isinstance(value, pd.Timestamp):
+        return value.item()
+    return str(value)
+
+
 class Store:
     def __init__(self, path: Path | str):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -149,10 +156,10 @@ class Store:
                     _day(start),
                     _day(end),
                     fingerprint,
-                    json.dumps(settings, default=str),
-                    json.dumps(metrics),
-                    json.dumps(benchmark),
-                    json.dumps(notes, default=str),
+                    json.dumps(settings, default=_json_default),
+                    json.dumps(metrics, default=_json_default),
+                    json.dumps(benchmark, default=_json_default),
+                    json.dumps(notes, default=_json_default),
                 ),
             )
             backtest_id = cursor.lastrowid
