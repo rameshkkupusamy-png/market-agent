@@ -87,7 +87,7 @@ class Simulator:
         price = b.open * (1 + self.risk.slippage)
         affordable = math.floor((p.cash - self.risk.commission) / price)
         shares = min(order.shares, affordable)
-        if shares <= 0:
+        if shares <= 0 or order.ticker in p.positions:
             return
         p.cash -= shares * price + self.risk.commission
         p.positions[order.ticker] = Position(

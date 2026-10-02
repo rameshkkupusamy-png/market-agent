@@ -114,3 +114,21 @@ def test_equity_and_circuit_breaker():
     assert p.halted
     assert p.events == ["2024-03-05: circuit breaker on, equity 7,500 is 25.0% below peak 10,000"]
     assert p.equity_history == [(D1, 10_000.0), (D2, 7_500.0)]
+
+
+def test_buy_for_a_held_ticker_is_dropped():
+    p = held()
+    p.orders.append(Order("AAA", "buy", 5, "breakout", D0, atr=2.0))
+    Simulator(R, S).open(p, D1, lookup({("AAA", D1): Bar(100, 101, 99, 100)}))
+    assert p.positions["AAA"].shares == 10
+    assert p.cash == 9_000.0
+    assert p.orders == []
+
+
+def test_second_buy_for_one_ticker_in_a_batch_is_dropped():
+    p = Portfolio("p", 10_000.0)
+    p.orders.append(Order("AAA", "buy", 10, "breakout", D0, atr=2.0))
+    p.orders.append(Order("AAA", "buy", 4, "breakout", D0, atr=2.0))
+    Simulator(R, S).open(p, D1, lookup({("AAA", D1): Bar(100, 101, 99, 100)}))
+    assert p.positions["AAA"].shares == 10
+    assert p.cash == pytest.approx(10_000 - 10 * 100.1 - 1)
