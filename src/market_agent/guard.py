@@ -10,13 +10,19 @@ class GuardError(Exception):
 
 
 def check_test_period(store: Store, fingerprint: str) -> list[str]:
-    runs = store.backtest_runs("test")
+    """Runs covering the test period are the "test" and "full" periods."""
+    runs = sorted(
+        store.backtest_runs("test") + store.backtest_runs("full"), key=lambda run: run["id"]
+    )
     for run in runs:
         if run["fingerprint"] == fingerprint:
+            total = run["metrics"].get("total_return")
+            shown = f"{100 * total:+.1f}%" if isinstance(total, int | float) else "unknown"
             raise GuardError(
-                f"The test period was already run with these exact settings (run {run['id']} on "
-                f"{run['created_at']}): total return {run['metrics'].get('total_return')}. "
-                "Running it again would give the same answer."
+                f"These settings already ran the test period (run {run['id']} on "
+                f"{run['created_at']}): total return {shown}. "
+                "The test period was already run with these exact settings. Changing the "
+                "settings allows a new run, but that counts as tuning on the test period."
             )
     if not runs:
         return []

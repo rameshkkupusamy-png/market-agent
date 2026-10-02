@@ -26,6 +26,10 @@ agent backtest --period tuning   # 2015–2021: change settings and re-run as of
 agent backtest --period test     # 2022–today: run once per settings version, never tune on it
 ```
 
+`--period full` also covers the test period, so it is guarded the same way: a second run with
+the same settings is refused, and changing settings and re-running is flagged as tuning on the
+test period.
+
 The backtest prints how many universe members had no data (companies that left the index and
 vanished from Yahoo). Those are mostly failures, so results are somewhat better than reality.
 

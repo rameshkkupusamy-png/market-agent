@@ -77,3 +77,21 @@ def test_backtest_without_data_explains(tmp_path, monkeypatch, capsys):
     setup(tmp_path, monkeypatch)
     assert cli.main(["backtest", "--period", "tuning"]) == 1
     assert "Run `agent fetch` first" in capsys.readouterr().err
+
+
+def test_full_period_is_guarded_like_test(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    cli.main(["fetch"])
+    assert cli.main(["backtest", "--period", "test"]) == 0
+    capsys.readouterr()
+    assert cli.main(["backtest", "--period", "full"]) == 1
+    assert "already ran the test period" in capsys.readouterr().err
+
+
+def test_test_period_refused_after_full(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    cli.main(["fetch"])
+    assert cli.main(["backtest", "--period", "full"]) == 0
+    capsys.readouterr()
+    assert cli.main(["backtest", "--period", "test"]) == 1
+    assert "already ran the test period" in capsys.readouterr().err

@@ -115,7 +115,7 @@ def backtest_command(settings: Settings, store: Store, period: str) -> int:
         print("No cached data. Run `agent fetch` first.", file=sys.stderr)
         return 1
     warnings: list[str] = []
-    if period == "test":
+    if period in ("test", "full"):
         try:
             warnings = check_test_period(store, settings.fingerprint())
         except GuardError as exc:
