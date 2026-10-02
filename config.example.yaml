@@ -1,0 +1,13 @@
+# Copy to config.yaml to change settings. Anything left out uses the default.
+strategy:
+  volume_ratio: 1.5
+  stop_atr: 2.0
+  target_atr: 4.0
+risk:
+  starting_cash: 10000
+data:
+  db_path: data/market.db
+backtest:
+  start: 2015-01-01
+  tuning_end: 2021-12-31
+  test_start: 2022-01-01
