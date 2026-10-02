@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from yfinance.exceptions import YFEarningsDateMissing, YFRateLimitError
 
 from market_agent.data.sources import NoData
 from market_agent.data.yahoo import YahooEarnings, YahooPrices, YahooSectors, yahoo_symbol
@@ -9,9 +10,15 @@ class FakeTicker:
     def __init__(self, history=None, earnings=None, info=None, error=None):
         self._history = history
         self._earnings = earnings
-        self.info = info or {}
+        self._info = info or {}
         self._error = error
         self.history_args = None
+
+    @property
+    def info(self):
+        if self._error:
+            raise self._error
+        return self._info
 
     def history(self, **kwargs):
         self.history_args = kwargs
@@ -72,13 +79,27 @@ def test_earnings_dates_become_days_with_coverage():
     assert history.coverage_start == pd.Timestamp("2015-01-27")
 
 
-def test_earnings_failure_gives_empty_history():
-    yf = FakeYf({"AAPL": FakeTicker(error=KeyError("Earnings Date"))})
-    history = YahooEarnings(yf).fetch("AAPL")
+@pytest.mark.parametrize(
+    "ticker", [FakeTicker(earnings=None), FakeTicker(error=YFEarningsDateMissing("AAPL"))]
+)
+def test_no_earnings_data_gives_empty_history(ticker):
+    history = YahooEarnings(FakeYf({"AAPL": ticker})).fetch("AAPL")
     assert history.dates == [] and history.coverage_start is None
+
+
+@pytest.mark.parametrize("error", [YFRateLimitError(), ConnectionError("timed out")])
+def test_earnings_transport_errors_propagate(error):
+    with pytest.raises(type(error)):
+        YahooEarnings(FakeYf({"AAPL": FakeTicker(error=error)})).fetch("AAPL")
 
 
 def test_sector():
     yf = FakeYf({"AAPL": FakeTicker(info={"sector": "Technology"}), "X": FakeTicker(info={})})
     assert YahooSectors(yf).sector("AAPL") == "Technology"
     assert YahooSectors(yf).sector("X") == "Unknown"
+
+
+def test_sector_transport_errors_propagate():
+    yf = FakeYf({"AAPL": FakeTicker(error=YFRateLimitError())})
+    with pytest.raises(YFRateLimitError):
+        YahooSectors(yf).sector("AAPL")

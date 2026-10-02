@@ -17,3 +17,8 @@ tickers that were later reused by another company (e.g. AAL, AAP, ALK) return da
 company, so "has data" does not guarantee it is the old member; survivorship bias is measurable,
 not fixable. The ticker `AFS.A` (dot-class share) is mapped to a dash in the check.
 News source for plan 2: not checked here.
+
+Limitation: `history(auto_adjust=True)` adjusts the whole history for later splits and
+dividends, so the minimum-price and traded-value filters see adjusted, not traded, prices; a
+stock that later split (e.g. NVDA, under $1 adjusted in 2015) is wrongly excluded before the
+split. See "Known limitations" in the README.

@@ -22,6 +22,12 @@ def _client(client: Any) -> Any:
     return client if client is not None else importlib.import_module("yfinance")
 
 
+def _no_data_error(exc: Exception) -> bool:
+    """yfinance's "ticker has no such data" error, as opposed to transport or rate-limit errors."""
+    missing = importlib.import_module("yfinance.exceptions").YFTickerMissingError
+    return isinstance(exc, missing)
+
+
 class YahooPrices:
     def __init__(self, client: Any = None):
         self._yf = _client(client)
@@ -48,7 +54,9 @@ class YahooEarnings:
     def fetch(self, ticker: str) -> EarningsHistory:
         try:
             frame = self._yf.Ticker(yahoo_symbol(ticker)).get_earnings_dates(limit=100)
-        except Exception as exc:  # yfinance raises many kinds of errors for missing data
+        except Exception as exc:
+            if not _no_data_error(exc):
+                raise
             log.info("%s: no earnings dates (%s)", ticker, exc)
             return EarningsHistory([], None)
         if frame is None or frame.empty:
@@ -65,6 +73,8 @@ class YahooSectors:
         try:
             info = self._yf.Ticker(yahoo_symbol(ticker)).info or {}
         except Exception as exc:
+            if not _no_data_error(exc):
+                raise
             log.info("%s: no sector (%s)", ticker, exc)
             return "Unknown"
         return info.get("sector") or "Unknown"

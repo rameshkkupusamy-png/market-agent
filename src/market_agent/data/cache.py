@@ -35,6 +35,10 @@ class PriceCache:
             if bars.empty:
                 raise NoData(ticker)
         except NoData:
+            # Yahoo also returns nothing on errors and rate limits: never let that wipe history.
+            if self._store.load_prices(ticker) is not None:
+                log.warning("%s: no price data this time, keeping the cached prices", ticker)
+                return True
             log.info("%s: no price data", ticker)
             self._store.mark_missing(ticker, stamp)
             return False
@@ -54,6 +58,7 @@ class EarningsCache:
         self._today = today
 
     def update(self, ticker: str) -> None:
+        """A source error propagates and leaves the stored dates untouched."""
         stamp = self._today().isoformat()
         if self._store.earnings_fetched_on(ticker) == stamp:
             return

@@ -161,3 +161,43 @@ def test_backtest_round_trip_with_numpy_and_timestamp_values(store):
     assert run["metrics"] == {"trades": 3, "cagr": 0.12, "max_drawdown_day": "2024-03-01 00:00:00"}
     assert run["benchmark"] == {"cagr": 0.08, "days": 250}
     assert store.backtest_runs("2025") == []
+
+
+def test_empty_refetch_keeps_cached_prices(store):
+    store.replace_prices("AAPL", make_bars([10, 11, 12]), "2026-10-01")
+    source = FakePrices({"AAPL": make_bars([10]).iloc[0:0]})
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2))
+    assert cache.update("AAPL", date(2014, 1, 1)) is True
+    assert list(store.load_prices("AAPL")["close"]) == [10.0, 11.0, 12.0]
+    assert store.tickers_with_prices() == ["AAPL"]
+    assert store.missing_tickers() == []
+
+
+def test_failed_refetch_keeps_cached_prices(store):
+    store.replace_prices("AAPL", make_bars([10, 11, 12]), "2026-10-01")
+
+    class Failing:
+        def fetch(self, ticker, start, end):
+            raise ConnectionError("timed out")
+
+    cache = PriceCache(store, Failing(), today=lambda: date(2026, 10, 2))
+    with pytest.raises(ConnectionError):
+        cache.update("AAPL", date(2014, 1, 1))
+    assert list(store.load_prices("AAPL")["close"]) == [10.0, 11.0, 12.0]
+
+
+def test_earnings_source_error_keeps_stored_dates(store):
+    history = EarningsHistory([pd.Timestamp("2015-01-27")], pd.Timestamp("2015-01-27"))
+    EarningsCache(store, FakeEarnings({"AAPL": history}), today=lambda: date(2026, 10, 1)).update(
+        "AAPL"
+    )
+
+    class Failing:
+        def fetch(self, ticker):
+            raise ConnectionError("rate limited")
+
+    cache = EarningsCache(store, Failing(), today=lambda: date(2026, 10, 2))
+    with pytest.raises(ConnectionError):
+        cache.update("AAPL")
+    assert store.load_earnings()["AAPL"] == history
+    assert store.earnings_fetched_on("AAPL") == "2026-10-01"

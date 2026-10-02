@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import date
 from pathlib import Path
@@ -22,6 +24,16 @@ from market_agent.store import Store
 from market_agent.universe import Universe, load_sectors, write_sectors
 
 PERIODS = ("tuning", "test", "full")
+DEFAULT_CONFIG = Path("config.yaml")
+ATTEMPTS = 3  # tries per ticker before it is listed as failed
+BACKOFF_SECONDS = 5.0  # wait before the 2nd try; doubles before each later one
+
+log = logging.getLogger(__name__)
+pause = time.sleep  # replaced in tests
+
+
+class PeriodError(Exception):
+    """The requested backtest period can't be run with this config and cache."""
 
 
 # Factories replaced in tests.
@@ -39,7 +51,7 @@ def sector_source():
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="agent", description="Swing-trading analyst")
-    parser.add_argument("--config", type=Path, default=Path("config.yaml"))
+    parser.add_argument("--config", type=Path, help=f"settings file (default {DEFAULT_CONFIG})")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("fetch", help="download prices and earnings dates for the universe")
     commands.add_parser("build-sectors", help="write data/sectors.csv from Yahoo")
@@ -49,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
 
     try:
-        settings = load_settings(args.config)
+        settings = load_settings(args.config or DEFAULT_CONFIG, required=args.config is not None)
     except SettingsError as exc:
         print(f"Settings error: {exc}", file=sys.stderr)
         return 1
@@ -70,52 +82,147 @@ def universe_tickers(settings: Settings) -> list[str]:
     return sorted(universe.tickers_between(start, pd.Timestamp(date.today())))
 
 
+def _shown(tickers: list[str]) -> str:
+    return ", ".join(tickers[:20]) + (" …" if len(tickers) > 20 else "")
+
+
+def with_retries[T](ticker: str, action: Callable[[], T]) -> T:
+    """Run one ticker's download, retrying with a growing wait; the last error propagates."""
+    for attempt in range(1, ATTEMPTS):
+        try:
+            return action()
+        except Exception as exc:
+            log.warning("%s: %s (try %d of %d)", ticker, exc, attempt, ATTEMPTS)
+            pause(BACKOFF_SECONDS * 2 ** (attempt - 1))
+    return action()
+
+
+def report_failures(failed: list[str]) -> int:
+    if not failed:
+        return 0
+    noun = "ticker" if len(failed) == 1 else "tickers"
+    print(
+        f"Failed: {len(failed)} {noun} ({_shown(failed)}). Run the command again to retry them.",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def fetch(settings: Settings, store: Store) -> int:
     prices = PriceCache(store, price_source())
     earnings = EarningsCache(store, earnings_source())
     tickers = [*universe_tickers(settings), settings.data.benchmark]
+    failed = []
     for index, ticker in enumerate(tickers, 1):
-        if prices.update(ticker, settings.data.history_start) and ticker != settings.data.benchmark:
-            earnings.update(ticker)
+        try:
+            has_data = with_retries(
+                ticker, lambda t=ticker: prices.update(t, settings.data.history_start)
+            )
+            if has_data and ticker != settings.data.benchmark:
+                with_retries(ticker, lambda t=ticker: earnings.update(t))
+        except Exception as exc:
+            log.warning("%s: failed (%s)", ticker, exc)
+            failed.append(ticker)
         if index % 50 == 0:
             print(f"  {index} of {len(tickers)} tickers")
     missing = store.missing_tickers()
-    shown = ", ".join(missing[:20]) + (" …" if len(missing) > 20 else "")
     print(
         f"Prices: {len(store.tickers_with_prices())} tickers with data, "
-        f"{len(missing)} without ({shown})"
+        f"{len(missing)} without ({_shown(missing)})"
     )
-    return 0
+    return report_failures(sorted(failed))
 
 
 def build_sectors(settings: Settings, store: Store) -> int:
+    """Keeps a ticker's earlier sector when the new lookup fails or says "Unknown"."""
     source = sector_source()
-    sectors = {ticker: source.sector(ticker) for ticker in store.tickers_with_prices()}
-    sectors.pop(settings.data.benchmark, None)
-    write_sectors(Path(settings.data.sectors_csv), sectors)
+    path = Path(settings.data.sectors_csv)
+    previous = load_sectors(path)
+    sectors = {}
+    failed = []
+    for ticker in store.tickers_with_prices():
+        if ticker == settings.data.benchmark:
+            continue
+        try:
+            sector = with_retries(ticker, lambda t=ticker: source.sector(t))
+        except Exception as exc:
+            log.warning("%s: sector lookup failed (%s)", ticker, exc)
+            failed.append(ticker)
+            sector = None
+        if sector in (None, "Unknown") and ticker in previous:
+            sector = previous[ticker]
+        if sector is not None:
+            sectors[ticker] = sector
+    write_sectors(path, sectors)
     unknown = sum(1 for s in sectors.values() if s == "Unknown")
     print(f"Sectors written for {len(sectors)} tickers ({unknown} unknown)")
-    return 0
+    return report_failures(failed)
 
 
 def period_dates(
     period: str, settings: Settings, latest: pd.Timestamp
 ) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Only the guarded periods ("test", "full") may reach test_start."""
     b = settings.backtest
     if period == "tuning":
-        return pd.Timestamp(b.start), pd.Timestamp(b.tuning_end)
-    if period == "test":
-        return pd.Timestamp(b.test_start), latest
-    return pd.Timestamp(b.start), latest
+        if b.tuning_end >= b.test_start:
+            raise PeriodError(
+                f"backtest.tuning_end ({b.tuning_end}) must be before test_start "
+                f"({b.test_start}), so tuning never sees the test period. Fix the config."
+            )
+        start, end = pd.Timestamp(b.start), pd.Timestamp(b.tuning_end)
+    elif period == "test":
+        start, end = pd.Timestamp(b.test_start), latest
+    else:
+        start, end = pd.Timestamp(b.start), latest
+    if start > min(end, latest):
+        raise PeriodError(
+            f"No cached trading days in the {period} period ({start:%Y-%m-%d} to "
+            f"{end:%Y-%m-%d}); the latest cached day is {latest:%Y-%m-%d}."
+        )
+    return start, end
+
+
+def never_fetched(
+    store: Store, universe: Universe, start: pd.Timestamp, end: pd.Timestamp
+) -> list[str]:
+    """Universe members of the period that `agent fetch` never tried (no record at all)."""
+    attempted = store.attempted_tickers()
+    return sorted(t for t in universe.tickers_between(start, end) if t not in attempted)
 
 
 def backtest_command(settings: Settings, store: Store, period: str) -> int:
     benchmark = store.load_prices(settings.data.benchmark)
     if benchmark is None:
-        print("No cached data. Run `agent fetch` first.", file=sys.stderr)
+        print(
+            f"No cached prices for the benchmark {settings.data.benchmark}. "
+            "Run `agent fetch` first.",
+            file=sys.stderr,
+        )
+        return 1
+    days = benchmark.index
+    universe = Universe.from_csv(Path(settings.data.membership_csv))
+    try:
+        start, end = period_dates(period, settings, days[-1])
+    except PeriodError as exc:
+        print(str(exc), file=sys.stderr)
         return 1
     warnings: list[str] = []
     if period in ("test", "full"):
+        missing = never_fetched(store, universe, start, end)
+        if missing:
+            count = (
+                "1 universe member was"
+                if len(missing) == 1
+                else f"{len(missing)} universe members were"
+            )
+            print(
+                f"The cache is incomplete: {count} never fetched ({_shown(missing)}). "
+                "Run `agent fetch` until it finishes without failures, then run this again. "
+                "Nothing was run, so the test period is still unused.",
+                file=sys.stderr,
+            )
+            return 1
         try:
             warnings = check_test_period(store, settings.fingerprint())
         except GuardError as exc:
@@ -123,12 +230,9 @@ def backtest_command(settings: Settings, store: Store, period: str) -> int:
             return 1
 
     frames = {t: f for t in store.tickers_with_prices() if (f := store.load_prices(t)) is not None}
-    days = benchmark.index
     panel = Panel(frames, days, settings.strategy, settings.data.max_daily_jump)
-    universe = Universe.from_csv(Path(settings.data.membership_csv))
     earnings = EarningsCalendar(store.load_earnings(), list(days))
     sectors = load_sectors(Path(settings.data.sectors_csv))
-    start, end = period_dates(period, settings, days[-1])
     result = run_backtest(
         panel, universe, earnings, sectors, benchmark["close"], settings, start, end
     )
@@ -171,7 +275,8 @@ def print_result(period: str, r: BacktestResult) -> None:
     )
     print(
         f"Universe members without data: {len(n['tickers_without_data'])} of "
-        f"{n['tickers_in_universe']} (results are biased upwards by roughly that share)"
+        f"{n['tickers_in_universe']}. They are a mix of failed and acquired companies, so the "
+        "direction of the bias is uncertain, though probably upward."
     )
     print(
         f"Signals taken without earnings dates: {n['signals_without_earnings_data']} of "

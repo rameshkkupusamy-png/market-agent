@@ -79,11 +79,40 @@ def test_compute_metrics():
         Trade("A", "X", day, 100.0, day, 110.0, 1, "target", 8.0),
         Trade("B", "X", day, 100.0, day, 95.0, 1, "stop", -7.0),
     ]
-    m = compute_metrics(equity, trades, exposure=0.5)
+    m = compute_metrics(equity, trades, exposure=0.5, commission=1.0)
     assert m["total_return"] == 0.1
     assert m["max_drawdown"] == -0.25
     assert m["trades"] == 2
     assert m["win_rate"] == 0.5
-    assert m["avg_win"] == 0.1
-    assert m["avg_loss"] == -0.05
+    assert m["avg_win"] == round(8.0 / 101.0, 4)  # net pnl over entry cost incl. commission
+    assert m["avg_loss"] == round(-7.0 / 101.0, 4)
     assert m["exposure"] == 0.5
+
+
+def test_win_and_loss_use_net_pnl():
+    day = pd.Timestamp("2024-01-01")
+    equity = pd.Series([100.0, 100.0], index=pd.bdate_range(day, periods=2))
+    # price rose 0.1%, but commissions make the trade a loss: it is averaged as a loss
+    trade = Trade("A", "X", day, 100.0, day, 100.1, 10, "time", 1.0 - 2.0)
+    m = compute_metrics(equity, [trade], commission=1.0)
+    assert m["win_rate"] == 0.0
+    assert m["avg_win"] == 0.0
+    assert m["avg_loss"] == round(-1.0 / 1001.0, 4)
+
+
+def test_bad_days_counted_only_for_members_in_the_period():
+    n = 320
+    closes = [50 + 0.1 * i for i in range(n)]
+    closes[10] = closes[10] * 3  # warm-up spike: outside the period
+    closes[260] = closes[260] * 3  # inside the period
+    aaa = make_bars(closes)
+    other = make_bars(closes)  # not a member
+    spy = make_bars([400 + 0.2 * i for i in range(n)])
+    days = spy.index
+    panel = Panel({"AAA": aaa, "OTHER": other, "SPY": spy}, days, S.strategy, 0.4)
+    universe = Universe([(days[0], frozenset({"AAA"}))])
+    earnings = EarningsCalendar({}, list(days))
+    result = run_backtest(panel, universe, earnings, {}, spy["close"], S, days[200], days[-1])
+    assert panel.excluded["AAA"] == [days[10], days[11], days[260], days[261]]
+    assert len(panel.excluded["OTHER"]) == 4
+    assert result.notes["excluded_bad_days"] == 2  # the jump up and back down on days 260-261

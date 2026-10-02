@@ -4,21 +4,22 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass, field, fields
-from datetime import date
+from dataclasses import asdict, dataclass, field
+from datetime import date, datetime
 from pathlib import Path
+from typing import Any, get_type_hints
 
 import yaml
 
 
 class SettingsError(Exception):
-    """config.yaml has an unknown section or setting."""
+    """config.yaml is missing, or has an unknown section or setting or a wrongly typed value."""
 
 
 @dataclass(frozen=True)
 class StrategySettings:
     min_price: float = 10.0
-    min_traded_value: float = 20_000_000
+    min_traded_value: float = 20_000_000.0
     sma_fast: int = 50
     sma_slow: int = 200
     breakout_days: int = 20
@@ -35,7 +36,7 @@ class StrategySettings:
 
 @dataclass(frozen=True)
 class RiskSettings:
-    starting_cash: float = 10_000
+    starting_cash: float = 10_000.0
     risk_per_trade: float = 0.01
     max_position_pct: float = 0.10
     max_positions: int = 10
@@ -87,19 +88,53 @@ SECTIONS = {
 }
 
 
-def load_settings(path: Path | None) -> Settings:
-    raw = {}
+TYPE_NAMES = {float: "a number", int: "a whole number", str: "text", date: "a date (YYYY-MM-DD)"}
+
+
+def _coerce(where: str, value: Any, kind: type) -> Any:
+    """Give each value its field's type, so `2` and `2.0` make the same fingerprint."""
+    if kind in (float, int) and isinstance(value, bool):
+        pass
+    elif kind is float and isinstance(value, int | float):
+        return float(value)
+    elif kind is int and isinstance(value, int):
+        return value
+    elif kind is str and isinstance(value, str):
+        return value
+    elif kind is date and isinstance(value, datetime):
+        return value.date()
+    elif kind is date and isinstance(value, date):
+        return value
+    elif kind is date and isinstance(value, str):
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            pass
+    raise SettingsError(f"{where} must be {TYPE_NAMES[kind]}, got {value!r}")
+
+
+def load_settings(path: Path | None, required: bool = False) -> Settings:
+    """`required`: the path was given explicitly, so a missing file is an error."""
+    raw: Any = {}
     if path is not None and path.exists():
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    elif path is not None and required:
+        raise SettingsError(f"Settings file {path} not found")
+    if not isinstance(raw, dict):
+        raise SettingsError(f"{path} must be a mapping of sections")
     for name in raw:
         if name not in SECTIONS:
             raise SettingsError(f"Unknown section {name} in {path}")
     parts = {}
     for name, cls in SECTIONS.items():
         values = raw.get(name) or {}
-        allowed = {f.name for f in fields(cls)}
+        if not isinstance(values, dict):
+            raise SettingsError(f"Section {name} in {path} must be a mapping of settings")
+        types = get_type_hints(cls)
         for key in values:
-            if key not in allowed:
+            if key not in types:
                 raise SettingsError(f"Unknown setting {name}.{key} in {path}")
-        parts[name] = cls(**values)
+        parts[name] = cls(
+            **{key: _coerce(f"{name}.{key}", v, types[key]) for key, v in values.items()}
+        )
     return Settings(**parts)

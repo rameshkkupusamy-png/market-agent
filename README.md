@@ -30,8 +30,22 @@ agent backtest --period test     # 2022–today: run once per settings version, 
 the same settings is refused, and changing settings and re-running is flagged as tuning on the
 test period.
 
+`agent fetch` retries a ticker that fails (timeouts, rate limits) a few times, then moves on. At
+the end it lists the tickers that still failed and exits with an error; run it again to retry
+them. Cached prices are never replaced by an empty download. `--period test` and `--period full`
+refuse to run until every universe member of the period has been tried at least once.
+
 The backtest prints how many universe members had no data (companies that left the index and
-vanished from Yahoo). Those are mostly failures, so results are somewhat better than reality.
+vanished from Yahoo). They are a mix of failed and acquired companies, so the direction of the
+bias is uncertain, though probably upward.
+
+## Known limitations
+
+- Prices are adjusted for later splits and dividends, and the minimum-price and traded-value
+  filters run on those adjusted prices. A stock that later split looks cheaper in the past than
+  it really traded (NVDA in 2015 is under $1 adjusted), so it is wrongly left out on days before
+  the split. This works against later winners. Fixing it means fetching split history to
+  un-adjust prices; decide whether to do that before the first test-period run.
 
 ## Develop
 

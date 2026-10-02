@@ -94,6 +94,10 @@ class Store:
         ).fetchall()
         return [r[0] for r in rows]
 
+    def attempted_tickers(self) -> set[str]:
+        """Tickers a fetch has tried, with or without data."""
+        return {r[0] for r in self._conn.execute("SELECT ticker FROM price_meta")}
+
     def tickers_with_prices(self) -> list[str]:
         rows = self._conn.execute(
             "SELECT ticker FROM price_meta WHERE has_data = 1 ORDER BY ticker"

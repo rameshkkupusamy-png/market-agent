@@ -32,7 +32,10 @@ class BacktestResult:
 
 
 def compute_metrics(
-    equity: pd.Series, trades: list[Trade] | None, exposure: float | None = None
+    equity: pd.Series,
+    trades: list[Trade] | None,
+    exposure: float | None = None,
+    commission: float = 0.0,
 ) -> dict[str, Any]:
     total = equity.iloc[-1] / equity.iloc[0] - 1
     years = (equity.index[-1] - equity.index[0]).days / 365.25
@@ -44,9 +47,10 @@ def compute_metrics(
         "max_drawdown": round(float(drawdown), 4),
     }
     if trades is not None:
-        changes = [t.exit_price / t.entry_price - 1 for t in trades]
-        wins = [c for c, t in zip(changes, trades, strict=True) if t.pnl > 0]
-        losses = [c for c, t in zip(changes, trades, strict=True) if t.pnl <= 0]
+        # net pnl as a share of the entry cost (shares at the slipped price plus commission)
+        returns = [t.pnl / (t.entry_price * t.shares + commission) for t in trades]
+        wins = [r for r in returns if r > 0]
+        losses = [r for r in returns if r <= 0]
         metrics.update(
             trades=len(trades),
             win_rate=round(len(wins) / len(trades), 4) if trades else 0.0,
@@ -93,19 +97,28 @@ def run_backtest(
     bench = benchmark_close.loc[days[0] : days[-1]]
     bench_equity = bench / bench.iloc[0] * settings.risk.starting_cash
     members = universe.tickers_between(days[0], days[-1])
+    bad_days = sum(
+        1
+        for ticker, bad in panel.excluded.items()
+        if ticker in members and ticker != settings.data.benchmark
+        for day in bad
+        if days[0] <= day <= days[-1]
+    )
     return BacktestResult(
         start=days[0],
         end=days[-1],
         equity=equity_series,
         trades=list(portfolio.trades),
-        metrics=compute_metrics(equity_series, portfolio.trades, exposed_days / len(days)),
+        metrics=compute_metrics(
+            equity_series, portfolio.trades, exposed_days / len(days), settings.risk.commission
+        ),
         benchmark=compute_metrics(bench_equity, None),
         notes={
             "signals": signals,
             "signals_without_earnings_data": without_earnings,
             "tickers_in_universe": len(members),
             "tickers_without_data": sorted(t for t in members if t not in panel.tickers),
-            "excluded_bad_days": sum(len(v) for v in panel.excluded.values()),
+            "excluded_bad_days": bad_days,
             "circuit_breaker_events": list(portfolio.events),
         },
         open_positions=len(portfolio.positions),

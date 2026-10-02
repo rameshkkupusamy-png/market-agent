@@ -38,7 +38,8 @@ def check_limits(
         return "already held"
     if len(open_sectors) >= risk.max_positions:
         return f"{risk.max_positions} positions already open"
-    if Counter(open_sectors.values())[sector] >= risk.max_per_sector:
+    # "Unknown" is not a real sector, so those tickers don't share one sector's slots.
+    if sector != "Unknown" and Counter(open_sectors.values())[sector] >= risk.max_per_sector:
         return f"{risk.max_per_sector} positions in {sector} already"
     return None
 

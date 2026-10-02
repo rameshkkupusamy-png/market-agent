@@ -77,3 +77,10 @@ def test_plan_entries_sets_aside_cash_for_earlier_orders():
     # A takes 10 × 100.1 + 1 = 1,002; B only fits (498 − 1) / 100.1 = 4; C has nothing left
     assert [(o.ticker, o.shares) for o in p.orders] == [("A", 10), ("B", 4)]
     assert notes == ["C: not enough cash"]
+
+
+def test_unknown_sector_has_no_sector_cap():
+    held = {f"T{i}": "Unknown" for i in range(5)}
+    assert check_limits("NEW", "Unknown", held, R) is None
+    held.update({f"S{i}": f"S{i}" for i in range(5)})
+    assert check_limits("NEW", "Unknown", held, R) == "10 positions already open"

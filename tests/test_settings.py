@@ -1,4 +1,5 @@
 from datetime import date
+from typing import get_type_hints
 
 import pytest
 
@@ -56,3 +57,39 @@ def test_fingerprint_changes_with_strategy_or_risk_only():
     assert settings_with(strategy={"volume_ratio": 2.0}).fingerprint() != base
     assert settings_with(risk={"max_positions": 5}).fingerprint() != base
     assert settings_with(data={"db_path": "other.db"}).fingerprint() == base
+
+
+def test_missing_explicit_file_is_an_error(tmp_path):
+    with pytest.raises(SettingsError, match="not found"):
+        load_settings(tmp_path / "none.yaml", required=True)
+
+
+def test_whole_numbers_give_the_same_fingerprint_as_the_defaults(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text("strategy:\n  stop_atr: 2\nrisk:\n  starting_cash: 10000\n", "utf-8")
+    s = load_settings(path)
+    assert isinstance(s.strategy.stop_atr, float)
+    assert s.fingerprint() == Settings().fingerprint()
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ("strategy:\n  stop_atr: two\n", "strategy.stop_atr"),
+        ("risk:\n  max_positions: 2.5\n", "risk.max_positions"),
+        ("backtest:\n  test_start: soon\n", "backtest.test_start"),
+        ("strategy: 5\n", "Section strategy"),
+        ("- strategy\n", "mapping"),
+    ],
+)
+def test_bad_values_are_rejected(tmp_path, text, message):
+    path = tmp_path / "config.yaml"
+    path.write_text(text, "utf-8")
+    with pytest.raises(SettingsError, match=message):
+        load_settings(path)
+
+
+def test_defaults_have_their_declared_types():
+    for section in (Settings().strategy, Settings().risk, Settings().data, Settings().backtest):
+        for name, kind in get_type_hints(type(section)).items():
+            assert type(getattr(section, name)) is kind, name
