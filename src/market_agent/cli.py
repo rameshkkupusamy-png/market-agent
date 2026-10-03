@@ -200,6 +200,16 @@ def backtest_command(settings: Settings, store: Store, period: str) -> int:
             file=sys.stderr,
         )
         return 1
+    stale = store.tickers_without_traded_prices()
+    if stale:
+        count = "1 ticker" if len(stale) == 1 else f"{len(stale)} tickers"
+        verb = "has" if len(stale) == 1 else "have"
+        print(
+            f"{count} ({_shown(stale)}) {verb} cached prices without the as-traded prices the "
+            "price and traded-value filters need. Run `agent fetch` to download them again.",
+            file=sys.stderr,
+        )
+        return 1
     days = benchmark.index
     universe = Universe.from_csv(Path(settings.data.membership_csv))
     try:

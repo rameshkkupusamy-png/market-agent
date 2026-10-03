@@ -1,3 +1,5 @@
+import sqlite3
+
 import pandas as pd
 
 from helpers import make_bars
@@ -87,6 +89,20 @@ def test_fetch_build_sectors_and_backtest(tmp_path, monkeypatch, capsys):
     assert run["benchmark"]["total_return"] == round(spy_total, 4)
     strategy_total = run["metrics"]["total_return"]
     assert f"{'Total return':16}{cli._pct(strategy_total):>12}{cli._pct(spy_total):>12}" in out
+
+
+def test_backtest_refused_until_traded_prices_are_downloaded(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    assert cli.main(["fetch"]) == 0
+    conn = sqlite3.connect(tmp_path / "data" / "market.db")
+    conn.execute("UPDATE prices SET raw_close = NULL, raw_volume = NULL WHERE ticker = 'AAA'")
+    conn.commit()
+    conn.close()
+    capsys.readouterr()
+    assert cli.main(["backtest", "--period", "tuning"]) == 1
+    err = capsys.readouterr().err
+    assert "1 ticker (AAA) has cached prices without the as-traded prices" in err
+    assert "Run `agent fetch`" in err
 
 
 def test_test_period_runs_once_per_settings(tmp_path, monkeypatch, capsys):

@@ -12,6 +12,7 @@ from market_agent.settings import StrategySettings
 
 REQUIRED = [
     "close",
+    "raw_close",
     "volume",
     "sma_fast",
     "sma_slow",
@@ -44,7 +45,7 @@ def screen(
     snap = snapshot.loc[snapshot.index.intersection(sorted(set(members)))]
     snap = snap.dropna(subset=REQUIRED)
     signal = (
-        (snap["close"] > s.min_price)
+        (snap["raw_close"] > s.min_price)  # as traded: adjusted prices can be far lower
         & (snap["avg_value"] > s.min_traded_value)
         & (snap["close"] > snap["sma_slow"])
         & (snap["sma_fast"] > snap["sma_slow"])

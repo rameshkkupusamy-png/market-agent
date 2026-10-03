@@ -82,7 +82,9 @@ backtest-only assumptions.
   `cli.py` (`price_source()` etc., plus `pause`), which tests replace with fakes. `tests/helpers.py`
   has `make_bars()` for synthetic bars and `settings_with()` for changed settings.
 - Ruff: line length 100, rules `E,F,I,UP,B`. `helpers` counts as first-party for isort.
-- Known limitation (README): prices are split- and dividend-adjusted, so the min-price and
-  traded-value filters wrongly exclude stocks before a later split (NVDA in 2015). Decide whether
-  to un-adjust before the first test-period run.
+- Two kinds of price per day (`data/sources.py`): `open`..`volume` are adjusted for later splits
+  and dividends and drive signals, stops and fills; `raw_close` / `raw_volume` are as traded and
+  drive only the minimum-price and traded-value filters. Yahoo's `Close` is already
+  split-adjusted, so `yahoo.py` undoes splits from `Ticker.splits` (the whole history, not just
+  the requested days). The backtest refuses to run while any cached ticker lacks as-traded prices.
 - Free Yahoo data is for personal use only; this is not investment advice.

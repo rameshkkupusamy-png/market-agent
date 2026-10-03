@@ -28,20 +28,47 @@ def _no_data_error(exc: Exception) -> bool:
     return isinstance(exc, missing)
 
 
+def adjusted_and_traded(raw: pd.DataFrame, splits: pd.Series) -> pd.DataFrame:
+    """Yahoo's Close and Volume allow for later splits only, Adj Close also for dividends.
+
+    Adjusted bars scale open/high/low like yfinance's auto_adjust. As-traded prices undo every
+    split after each day, from the ticker's whole split history (also splits after `end`).
+    """
+    days = to_day(raw.index)
+    later_splits = pd.Series(1.0, index=raw.index)
+    for split_day, ratio in zip(to_day(splits.index), splits, strict=True):
+        if ratio > 0:
+            later_splits[days < split_day] *= ratio
+    factor = raw["Adj Close"] / raw["Close"]
+    return pd.DataFrame(
+        {
+            "open": raw["Open"] * factor,
+            "high": raw["High"] * factor,
+            "low": raw["Low"] * factor,
+            "close": raw["Adj Close"],
+            "volume": raw["Volume"],
+            "raw_close": raw["Close"] * later_splits,
+            "raw_volume": raw["Volume"] / later_splits,
+        },
+        index=raw.index,
+    )
+
+
 class YahooPrices:
     def __init__(self, client: Any = None):
         self._yf = _client(client)
 
     def fetch(self, ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-        raw = self._yf.Ticker(yahoo_symbol(ticker)).history(
+        source = self._yf.Ticker(yahoo_symbol(ticker))
+        raw = source.history(
             start=start.date(),
             end=(end + pd.Timedelta(days=1)).date(),
-            auto_adjust=True,
+            auto_adjust=False,
             actions=False,
         )
         if raw is None or raw.empty:
             raise NoData(ticker)
-        bars = normalize_bars(raw)
+        bars = normalize_bars(adjusted_and_traded(raw, source.splits))
         if bars.empty:
             raise NoData(ticker)
         return bars

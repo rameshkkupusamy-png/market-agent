@@ -45,6 +45,18 @@ def test_needs_an_uptrend():
     assert run({"AAA": falling}) == []
 
 
+def test_minimum_price_uses_the_traded_price():
+    # adjusted under $10 because of a later 40:1 split, but traded at about $200: still eligible
+    later_split = breakout(start=5.0, step=0.01)
+    later_split["raw_close"] = later_split["close"] * 40
+    later_split["raw_volume"] = later_split["volume"] * 100  # $20M+ a day as traded
+    assert [c.ticker for c in run({"AAA": later_split})] == ["AAA"]
+    # adjusted over $10 because of dividends, but traded under $10: not eligible
+    high_yield = breakout()
+    high_yield["raw_close"] = 9.0
+    assert run({"AAA": high_yield}) == []
+
+
 def test_needs_price_and_liquidity():
     cheap = breakout(start=5.0, step=0.01)
     assert run({"AAA": cheap}) == []

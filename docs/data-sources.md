@@ -18,7 +18,11 @@ company, so "has data" does not guarantee it is the old member; survivorship bia
 not fixable. The ticker `AFS.A` (dot-class share) is mapped to a dash in the check.
 News source for plan 2: not checked here.
 
-Limitation: `history(auto_adjust=True)` adjusts the whole history for later splits and
-dividends, so the minimum-price and traded-value filters see adjusted, not traded, prices; a
-stock that later split (e.g. NVDA, under $1 adjusted in 2015) is wrongly excluded before the
-split. See "Known limitations" in the README.
+Update (2026-10-03): prices are now fetched with `history(auto_adjust=False)`. Yahoo's `Close`
+and `Volume` there are still adjusted for later splits (NVDA 2015-01-02: Close 0.503, i.e. the
+traded $20.13 divided by the 4:1 and 10:1 splits), and `Adj Close` is also adjusted for dividends
+and spin-offs (T 2015-01-02: Close 25.58, Adj Close 11.25). The fetch derives the adjusted bars
+from `Adj Close` / `Close`, as `auto_adjust=True` does, and the as-traded close and volume by
+undoing every later split in `Ticker.splits`. Yahoo records the 2022 AT&T/WarnerMedia spin-off as
+a split, so T's as-traded price comes out right too. `Ticker.splits` costs one extra request per
+ticker.

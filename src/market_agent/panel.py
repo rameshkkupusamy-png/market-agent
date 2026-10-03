@@ -8,11 +8,11 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from market_agent.data.sources import BAR_COLUMNS
+from market_agent.data.sources import PRICE_COLUMNS
 from market_agent.indicators import INDICATOR_COLUMNS, add_indicators, suspicious_days
 from market_agent.settings import StrategySettings
 
-COLUMNS = (*BAR_COLUMNS, *INDICATOR_COLUMNS)
+COLUMNS = (*PRICE_COLUMNS, *INDICATOR_COLUMNS)
 
 
 @dataclass(frozen=True)

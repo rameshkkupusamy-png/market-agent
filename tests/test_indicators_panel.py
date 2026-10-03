@@ -33,6 +33,14 @@ def test_indicator_values():
     assert math.isclose(last["atr"], (tr_last + tr_prev) / 2)
 
 
+def test_traded_value_uses_traded_prices():
+    # adjusted 10 with volume 100, but it really traded at 30 (shares 100 / 3 after the split)
+    bars = make_bars([10, 10], volumes=[100, 100], traded=3)
+    bars["raw_volume"] = [100.0, 100.0]  # e.g. dividends only: volume unchanged
+    df = add_indicators(bars, StrategySettings(volume_days=2))
+    assert df.iloc[-1]["avg_value"] == 3_000
+
+
 def test_indicators_never_look_ahead():
     bars = make_bars(rising(300), volumes=[1e6 + 1000 * (i % 7) for i in range(300)])
     full = add_indicators(bars, S)

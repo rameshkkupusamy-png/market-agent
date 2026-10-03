@@ -39,13 +39,13 @@ The backtest prints how many universe members had no data (companies that left t
 vanished from Yahoo). They are a mix of failed and acquired companies, so the direction of the
 bias is uncertain, though probably upward.
 
-## Known limitations
+## Prices
 
-- Prices are adjusted for later splits and dividends, and the minimum-price and traded-value
-  filters run on those adjusted prices. A stock that later split looks cheaper in the past than
-  it really traded (NVDA in 2015 is under $1 adjusted), so it is wrongly left out on days before
-  the split. This works against later winners. Fixing it means fetching split history to
-  un-adjust prices; decide whether to do that before the first test-period run.
+Signals and simulated fills use prices adjusted for later splits and dividends, so returns are
+continuous. The minimum-price and traded-value filters use the prices as they really traded that
+day (NVDA closed at $20.13 on 2015-01-02, though it is under $1 adjusted), so stocks that later
+split are not wrongly left out. A cache from before this change is downloaded again by the next
+`agent fetch`; until then the backtest refuses to run.
 
 ## Develop
 

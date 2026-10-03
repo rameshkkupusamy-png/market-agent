@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import date
 from types import SimpleNamespace
 
@@ -52,11 +53,21 @@ def test_normalize_bars_handles_yahoo_shape():
             "Low": [2, 1, 2, 3],
             "Close": [2, 1, 2, None],
             "Volume": [20, 10, 20, 30],
+            "raw_close": [8, 4, 8, 12],
+            "raw_volume": [5, 2.5, 5, 7.5],
         },
         index=index,
     )
     bars = normalize_bars(raw)
-    assert list(bars.columns) == ["open", "high", "low", "close", "volume"]
+    assert list(bars.columns) == [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "raw_close",
+        "raw_volume",
+    ]
     assert bars.index.tz is None
     assert bars.index.name == "day"
     assert list(bars.index) == [pd.Timestamp("2024-01-02"), pd.Timestamp("2024-01-03")]
@@ -71,6 +82,34 @@ def test_store_round_trips_prices(store):
     assert store.fetched_on("AAPL") == "2026-10-02"
     assert store.load_prices("MSFT") is None
     assert store.tickers_with_prices() == ["AAPL"]
+
+
+def test_store_round_trips_traded_prices(store):
+    store.replace_prices("NVDA", make_bars([0.5, 0.6], traded=40), "2026-10-02")
+    loaded = store.load_prices("NVDA")
+    assert list(loaded["raw_close"]) == [20.0, 24.0]
+    assert store.tickers_without_traded_prices() == []
+
+
+def test_older_database_is_upgraded_and_marked_for_download(tmp_path):
+    path = tmp_path / "old.db"
+    conn = sqlite3.connect(path)
+    conn.executescript(
+        "CREATE TABLE prices (ticker TEXT, day TEXT, open REAL, high REAL, low REAL, close REAL,"
+        " volume REAL, PRIMARY KEY (ticker, day));"
+        "CREATE TABLE price_meta (ticker TEXT PRIMARY KEY, fetched_on TEXT, has_data INTEGER);"
+        "INSERT INTO prices VALUES ('AAPL', '2026-10-01', 1, 1, 1, 1, 100);"
+        "INSERT INTO price_meta VALUES ('AAPL', '2026-10-02', 1);"
+        "INSERT INTO price_meta VALUES ('GONE', '2026-10-02', 0);"
+    )
+    conn.commit()
+    conn.close()
+    store = Store(path)
+    assert store.fetched_on("AAPL") is None  # the next `agent fetch` downloads it again
+    assert store.fetched_on("GONE") == "2026-10-02"
+    assert store.load_prices("AAPL")["raw_close"].isna().all()
+    assert store.tickers_without_traded_prices() == ["AAPL"]
+    store.close()
 
 
 def test_replace_prices_replaces_the_whole_series(store):

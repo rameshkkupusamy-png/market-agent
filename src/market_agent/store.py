@@ -10,12 +10,12 @@ from typing import Any
 
 import pandas as pd
 
-from market_agent.data.sources import BAR_COLUMNS, EarningsHistory
+from market_agent.data.sources import PRICE_COLUMNS, EarningsHistory
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS prices (
     ticker TEXT, day TEXT, open REAL, high REAL, low REAL, close REAL, volume REAL,
-    PRIMARY KEY (ticker, day));
+    raw_close REAL, raw_volume REAL, PRIMARY KEY (ticker, day));
 CREATE TABLE IF NOT EXISTS price_meta (
     ticker TEXT PRIMARY KEY, fetched_on TEXT, has_data INTEGER);
 CREATE TABLE IF NOT EXISTS earnings (ticker TEXT, day TEXT, PRIMARY KEY (ticker, day));
@@ -47,6 +47,17 @@ class Store:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(path))
         self._conn.executescript(SCHEMA)
+        self._add_traded_prices()
+
+    def _add_traded_prices(self) -> None:
+        """Databases from before as-traded prices: add the columns, download prices again."""
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(prices)")}
+        if "raw_close" in columns:
+            return
+        with self._conn:
+            self._conn.execute("ALTER TABLE prices ADD COLUMN raw_close REAL")
+            self._conn.execute("ALTER TABLE prices ADD COLUMN raw_volume REAL")
+            self._conn.execute("UPDATE price_meta SET fetched_on = NULL WHERE has_data = 1")
 
     def close(self) -> None:
         self._conn.close()
@@ -54,12 +65,16 @@ class Store:
     # prices
     def replace_prices(self, ticker: str, bars: pd.DataFrame, fetched_on: str) -> None:
         rows = [
-            (ticker, _day(day), *(float(row[c]) for c in BAR_COLUMNS))
+            (ticker, _day(day), *(float(row[c]) for c in PRICE_COLUMNS))
             for day, row in bars.iterrows()
         ]
         with self._conn:
             self._conn.execute("DELETE FROM prices WHERE ticker = ?", (ticker,))
-            self._conn.executemany("INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+            self._conn.executemany(
+                f"INSERT INTO prices (ticker, day, {', '.join(PRICE_COLUMNS)}) "
+                f"VALUES ({', '.join('?' * (len(PRICE_COLUMNS) + 2))})",
+                rows,
+            )
             self._conn.execute(
                 "INSERT OR REPLACE INTO price_meta VALUES (?, ?, 1)", (ticker, fetched_on)
             )
@@ -79,14 +94,21 @@ class Store:
 
     def load_prices(self, ticker: str) -> pd.DataFrame | None:
         rows = self._conn.execute(
-            "SELECT day, open, high, low, close, volume FROM prices WHERE ticker = ? ORDER BY day",
+            f"SELECT day, {', '.join(PRICE_COLUMNS)} FROM prices WHERE ticker = ? ORDER BY day",
             (ticker,),
         ).fetchall()
         if not rows:
             return None
-        frame = pd.DataFrame(rows, columns=["day", *BAR_COLUMNS])
+        frame = pd.DataFrame(rows, columns=["day", *PRICE_COLUMNS])
         frame["day"] = pd.to_datetime(frame["day"])
-        return frame.set_index("day")
+        return frame.set_index("day").astype(float)
+
+    def tickers_without_traded_prices(self) -> list[str]:
+        """Tickers cached before as-traded prices were stored (or kept from such a cache)."""
+        rows = self._conn.execute(
+            "SELECT DISTINCT ticker FROM prices WHERE raw_close IS NULL ORDER BY ticker"
+        ).fetchall()
+        return [r[0] for r in rows]
 
     def missing_tickers(self) -> list[str]:
         rows = self._conn.execute(

@@ -7,7 +7,11 @@ from typing import Protocol
 
 import pandas as pd
 
+# Adjusted for later splits and dividends, so returns are continuous: signals and fills use these.
 BAR_COLUMNS = ["open", "high", "low", "close", "volume"]
+# As traded on the day: the minimum-price and traded-value filters use these.
+TRADED_COLUMNS = ["raw_close", "raw_volume"]
+PRICE_COLUMNS = [*BAR_COLUMNS, *TRADED_COLUMNS]
 
 
 class NoData(Exception):
@@ -37,7 +41,7 @@ def to_day(index: pd.Index) -> pd.DatetimeIndex:
 
 
 def normalize_bars(raw: pd.DataFrame) -> pd.DataFrame:
-    bars = raw.rename(columns=str.lower)[BAR_COLUMNS].astype(float)
+    bars = raw.rename(columns=str.lower)[PRICE_COLUMNS].astype(float)
     bars.index = to_day(raw.index)
     bars.index.name = "day"
     bars = bars[~bars.index.duplicated(keep="last")].sort_index()

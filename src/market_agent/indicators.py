@@ -29,7 +29,7 @@ def add_indicators(bars: pd.DataFrame, s: StrategySettings) -> pd.DataFrame:
     df["atr"] = true_range.rolling(s.atr_days).mean()
     df["high_close"] = close.rolling(s.breakout_days).max()
     df["avg_volume_prev"] = volume.shift(1).rolling(s.volume_days).mean()
-    df["avg_value"] = (close * volume).rolling(s.volume_days).mean()
+    df["avg_value"] = (df["raw_close"] * df["raw_volume"]).rolling(s.volume_days).mean()
     df["ret_rank"] = close / close.shift(s.rank_days) - 1
     return df
 
