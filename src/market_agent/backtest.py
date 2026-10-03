@@ -74,7 +74,7 @@ def run_backtest(
     days = [day for day in panel.days if start <= day <= end]
     if not days:
         raise ValueError(f"No trading days between {start:%Y-%m-%d} and {end:%Y-%m-%d}")
-    sim = Simulator(settings.risk, settings.strategy)
+    sim = Simulator(settings.risk, settings.strategy, halt_on_breaker=False)
     portfolio = Portfolio("rules-only", settings.risk.starting_cash)
     signals = without_earnings = exposed_days = 0
 
@@ -84,8 +84,6 @@ def run_backtest(
         equity = sim.close(portfolio, day, panel.bar, panel.last_day)
         if portfolio.positions:
             exposed_days += 1
-        if portfolio.halted:
-            continue
         candidates = screen(
             day, panel.snapshot(day), universe.members(day), earnings, settings.strategy
         )

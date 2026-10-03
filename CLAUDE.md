@@ -65,7 +65,8 @@ backtest-only assumptions.
   day before, at the open. `intraday()` checks stops and targets: a gap past either fills at the
   open, and if both are inside the day's range the stop wins. `close()` marks to market, exits
   delisted positions at the last close, queues time exits and trips the circuit breaker. Every
-  fill pays slippage and commission.
+  fill pays slippage and commission. The breaker halts new entries until the owner resets it,
+  except in the backtest (`halt_on_breaker=False`), which records each trip and keeps trading.
 - **Test-period guard** (`guard.py` + `cli.backtest_command`): `test` and `full` both cover the
   test period. Re-running them with an already-used fingerprint is refused. Running them with new
   settings after an earlier run is allowed but warns that this is tuning on the test period.

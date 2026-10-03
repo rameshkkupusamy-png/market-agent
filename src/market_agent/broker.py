@@ -2,6 +2,10 @@
 
 Day order: open() fills orders placed yesterday, intraday() checks stops and targets, close()
 marks to market and queues time exits. Every fill pays slippage and commission.
+
+The circuit breaker halts the portfolio until the owner resets it. The backtest has no owner, so
+it passes halt_on_breaker=False: each fall past the limit is recorded once (again only after a
+new peak) and trading carries on.
 """
 
 from __future__ import annotations
@@ -19,9 +23,12 @@ BarLookup = Callable[[str, pd.Timestamp], Bar | None]
 
 
 class Simulator:
-    def __init__(self, risk: RiskSettings, strategy: StrategySettings):
+    def __init__(
+        self, risk: RiskSettings, strategy: StrategySettings, halt_on_breaker: bool = True
+    ):
         self.risk = risk
         self.strategy = strategy
+        self.halt_on_breaker = halt_on_breaker
 
     def open(self, p: Portfolio, day: pd.Timestamp, bar: BarLookup) -> None:
         orders, p.orders = p.orders, []
@@ -73,14 +80,21 @@ class Simulator:
                 p.orders.append(Order(ticker, "sell", pos.shares, "time", day))
         equity = p.cash + sum(pos.shares * pos.last_close for pos in p.positions.values())
         p.equity_history.append((day, equity))
-        p.peak = max(p.peak, equity)
-        if not p.halted and equity <= p.peak * (1 - self.risk.breaker_drawdown):
-            p.halted = True
+        if equity > p.peak:
+            p.peak = equity
+            p.breaker_tripped = False
+        if not p.breaker_tripped and equity <= p.peak * (1 - self.risk.breaker_drawdown):
+            p.breaker_tripped = True
             fall = 100 * (1 - equity / p.peak)
-            p.events.append(
-                f"{day:%Y-%m-%d}: circuit breaker on, equity {equity:,.0f} is {fall:.1f}% "
-                f"below peak {p.peak:,.0f}"
-            )
+            detail = f"equity {equity:,.0f} is {fall:.1f}% below peak {p.peak:,.0f}"
+            if self.halt_on_breaker:
+                p.halted = True
+                p.events.append(f"{day:%Y-%m-%d}: circuit breaker on, {detail}")
+            else:
+                p.events.append(
+                    f"{day:%Y-%m-%d}: circuit breaker would turn on, {detail} "
+                    "(the backtest keeps trading)"
+                )
         return equity
 
     def _buy(self, p: Portfolio, order: Order, day: pd.Timestamp, b: Bar) -> None:

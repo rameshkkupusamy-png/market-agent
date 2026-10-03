@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from helpers import make_bars
+from helpers import make_bars, settings_with
 from market_agent.backtest import compute_metrics, run_backtest
 from market_agent.data.sources import EarningsHistory
 from market_agent.earnings import EarningsCalendar
@@ -116,3 +116,11 @@ def test_bad_days_counted_only_for_members_in_the_period():
     assert panel.excluded["AAA"] == [days[10], days[11], days[260], days[261]]
     assert len(panel.excluded["OTHER"]) == 4
     assert result.notes["excluded_bad_days"] == 2  # the jump up and back down on days 260-261
+
+
+def test_circuit_breaker_is_recorded_but_does_not_stop_trading():
+    panel, universe, earnings, spy, days = scenario()
+    settings = settings_with(risk={"breaker_drawdown": 0.0})  # trips on the first day
+    result = run_backtest(panel, universe, earnings, {}, spy, settings, days[200], days[-1])
+    assert result.notes["circuit_breaker_events"][0].startswith(f"{days[200]:%Y-%m-%d}: ")
+    assert [t.ticker for t in result.trades] == ["AAA"]

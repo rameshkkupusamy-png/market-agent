@@ -132,3 +132,21 @@ def test_second_buy_for_one_ticker_in_a_batch_is_dropped():
     Simulator(R, S).open(p, D1, lookup({("AAA", D1): Bar(100, 101, 99, 100)}))
     assert p.positions["AAA"].shares == 10
     assert p.cash == pytest.approx(10_000 - 10 * 100.1 - 1)
+
+
+def test_breaker_without_halt_records_each_drawdown_once():
+    p = held()  # 9,000 cash + 10 shares at 100
+    sim = Simulator(R, S, halt_on_breaker=False)
+    bars = lambda day: lookup({("AAA", day): Bar(100, 101, 99, 100)})  # noqa: E731
+    days = pd.bdate_range("2024-03-04", periods=5)
+    # equity: peak 10,000; trip at 7,500; still down at 7,400; new peak 10,500; trip at 8,500
+    for day, cash in zip(days, [9_000, 6_500, 6_400, 9_500, 7_500], strict=True):
+        p.cash = float(cash)
+        sim.close(p, day, bars(day), lambda t: days[-1])
+    assert not p.halted
+    assert p.events == [
+        "2024-03-05: circuit breaker would turn on, equity 7,500 is 25.0% below peak 10,000 "
+        "(the backtest keeps trading)",
+        "2024-03-08: circuit breaker would turn on, equity 8,500 is 19.0% below peak 10,500 "
+        "(the backtest keeps trading)",
+    ]

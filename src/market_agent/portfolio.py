@@ -54,7 +54,10 @@ class Portfolio:
     trades: list[Trade] = field(default_factory=list)
     equity_history: list[tuple[pd.Timestamp, float]] = field(default_factory=list)
     peak: float = 0.0
-    halted: bool = False
+    halted: bool = False  # no new positions until the owner resets it
+    breaker_tripped: bool = (
+        False  # this fall from the peak has been recorded; re-arms at a new peak
+    )
     events: list[str] = field(default_factory=list)
 
     def open_sectors(self) -> dict[str, str]:
