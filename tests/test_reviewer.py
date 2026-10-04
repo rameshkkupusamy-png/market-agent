@@ -3,10 +3,9 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx2
-import pandas as pd
 import pytest
 
-from market_agent.data.sources import Headline
+from helpers import ITEM
 from market_agent.reviewer import (
     SCHEMA,
     Answer,
@@ -19,26 +18,6 @@ from market_agent.reviewer import (
 from market_agent.settings import AiSettings
 
 AI = AiSettings()
-HEADLINE = Headline(
-    pd.Timestamp("2026-10-01 14:30", tz="UTC"),
-    "Reuters",
-    "Nvidia wins order",
-    "A large cloud order.",
-)
-ITEM = ReviewInput(
-    ticker="NVDA",
-    company="NVIDIA Corporation",
-    sector="Technology",
-    day=pd.Timestamp("2026-10-02"),
-    close=187.62,
-    sma_fast=175.4,
-    sma_slow=150.25,
-    volume_ratio=1.83,
-    atr=5.1,
-    return_63=0.214,
-    next_earnings=pd.Timestamp("2026-11-19"),
-    headlines=[HEADLINE],
-)
 VALID = json.dumps(
     {
         "verdict": "skip",

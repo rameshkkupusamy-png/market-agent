@@ -2,6 +2,8 @@
 
 import pandas as pd
 
+from market_agent.data.sources import Headline
+from market_agent.reviewer import ReviewInput
 from market_agent.settings import Settings
 
 
@@ -36,3 +38,26 @@ def settings_with(**sections):
         base,
         **{name: replace(getattr(base, name), **values) for name, values in sections.items()},
     )
+
+
+# A review candidate shared by the reviewer's unit and live tests.
+HEADLINE = Headline(
+    pd.Timestamp("2026-10-01 14:30", tz="UTC"),
+    "Reuters",
+    "Nvidia wins order",
+    "A large cloud order.",
+)
+ITEM = ReviewInput(
+    ticker="NVDA",
+    company="NVIDIA Corporation",
+    sector="Technology",
+    day=pd.Timestamp("2026-10-02"),
+    close=187.62,
+    sma_fast=175.4,
+    sma_slow=150.25,
+    volume_ratio=1.83,
+    atr=5.1,
+    return_63=0.214,
+    next_earnings=pd.Timestamp("2026-11-19"),
+    headlines=[HEADLINE],
+)

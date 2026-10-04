@@ -3,9 +3,9 @@
 import pytest
 from dotenv import load_dotenv
 
+from helpers import ITEM
 from market_agent.reviewer import ClaudeModel, Reviewer
 from market_agent.settings import AiSettings
-from tests.test_reviewer import ITEM
 
 pytestmark = pytest.mark.live
 
