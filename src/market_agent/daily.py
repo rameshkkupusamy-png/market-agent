@@ -253,16 +253,20 @@ def run_days(
     wait: bool,
     refetch: Callable[[list[str]], None],
     sleep: Callable[[float], None],
+    results: list[DayResult] | None = None,
 ) -> list[DayResult]:
     """Process every pending day in order. Only the latest day can be waited for; with
-    wait=False an incomplete latest day is left for the next run (its data may still come)."""
+    wait=False an incomplete latest day is left for the next run (its data may still come).
+
+    results: a list to append each day's result to as it is saved (also returned), so a
+    caller still has the finished days if a later one fails."""
+    results = [] if results is None else results
     days = pending_days(store, calendar, now(), settings.paper.settle_minutes)
     if not days:
-        return []
+        return results
     deadline = now() + pd.Timedelta(hours=settings.paper.retry_hours)
     every = settings.paper.retry_every_minutes
     market = load_market(store, settings, calendar.up_to(days[-1]))
-    results = []
     for day in days:
         latest = day == days[-1]
         check = check_market(market, settings, day)

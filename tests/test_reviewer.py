@@ -223,3 +223,12 @@ def test_api_errors_become_model_unavailable():
     messages = FakeMessages(error=anthropic.APIConnectionError(request=request))
     with pytest.raises(ModelUnavailable, match="connection failed"):
         ClaudeModel(AI, fake_client(messages)).ask("s", "p")
+
+
+def test_unexpected_api_errors_become_model_unavailable():
+    request = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx2.Response(200, request=request)
+    error = anthropic.APIResponseValidationError(response, None, message="bad shape")
+    messages = FakeMessages(error=error)
+    with pytest.raises(ModelUnavailable, match="bad shape"):
+        ClaudeModel(AI, fake_client(messages)).ask("s", "p")

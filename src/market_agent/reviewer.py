@@ -122,6 +122,8 @@ class ClaudeModel:
             raise ModelUnavailable(f"HTTP {exc.status_code}: {exc.message}") from exc
         except anthropic.APIConnectionError as exc:
             raise ModelUnavailable(f"connection failed: {exc}") from exc
+        except anthropic.APIError as exc:  # anything else the SDK raises: not reviewed
+            raise ModelUnavailable(f"{type(exc).__name__}: {exc.message}") from exc
         text = "".join(block.text for block in response.content if block.type == "text")
         usage = response.usage
         return Answer(text, usage.input_tokens, usage.output_tokens, response.model)

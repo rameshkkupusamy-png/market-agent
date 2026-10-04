@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import time
+import traceback
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import date, datetime
@@ -17,7 +18,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
-from market_agent.daily import DailyRun, processable, run_days, send_results
+from market_agent.daily import DailyRun, DayResult, processable, run_days, send_results
 from market_agent.data.cache import EarningsCache, PriceCache
 from market_agent.data.finnhub import FinnhubNews, NoNews
 from market_agent.data.sources import Profile
@@ -237,7 +238,43 @@ def settled_since(settings: Settings, calendar: TradingCalendar) -> pd.Timestamp
     return None if latest is None else calendar.close(latest) + pd.Timedelta(minutes=settle)
 
 
+SECRETS = ("ANTHROPIC_API_KEY", "FINNHUB_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")
+
+
+def hide_secrets(text: str) -> str:
+    for name in SECRETS:
+        value = os.environ.get(name)
+        if value:
+            text = text.replace(value, "<secret>")
+    return text
+
+
 def daily_command(settings: Settings, store: Store, wait: bool) -> int:
+    """A crash still sends the days already saved, then an alert, and exits with 1."""
+    results: list[DayResult] = []
+    try:
+        return run_daily(settings, store, wait, results)
+    except Exception as exc:
+        traceback.print_exc()  # kept in the scheduled task's log
+        alert = (
+            f"Daily run failed: {type(exc).__name__}: {hide_secrets(str(exc))}. "
+            "Details are in data\\daily.log."
+        )
+        try:
+            messenger = telegram()
+            for problem in send_results(store, results, messenger):
+                print(f"Telegram: {problem}", file=sys.stderr)
+            messenger.send(alert)
+        except Exception as send_exc:
+            print(
+                f"Could not send the failure alert: {type(send_exc).__name__}: "
+                f"{hide_secrets(str(send_exc))}",
+                file=sys.stderr,
+            )
+        return 1
+
+
+def run_daily(settings: Settings, store: Store, wait: bool, results: list[DayResult]) -> int:
     calendar = trading_calendar(settings)
     if fetch(settings, store, fresh_after=settled_since(settings, calendar)) != 0:
         print("Some downloads failed; the data check decides whether the day can be traded.")
@@ -254,6 +291,7 @@ def daily_command(settings: Settings, store: Store, wait: bool) -> int:
         wait=wait,
         refetch=lambda tickers: refetch(settings, store, tickers),
         sleep=pause,
+        results=results,
     )
     if not results:
         print("Nothing to do: every closed trading day is already processed.")

@@ -355,3 +355,54 @@ def test_run_daily_downloads_again_prices_fetched_before_they_settled(tmp_path, 
     assert CountingPrices.calls.count("SPY") == 2  # the early download is replaced
     assert cli.main(["catch-up"]) == 0
     assert CountingPrices.calls.count("SPY") == 2  # fetched after it settled: kept
+
+
+def test_a_crash_sends_the_saved_days_and_an_alert(tmp_path, monkeypatch, capsys):
+    telegram = daily_setup(tmp_path, monkeypatch, now_index=253)
+    assert cli.main(["run-daily"]) == 0
+    closes = [(d + pd.Timedelta(hours=20)).tz_localize("UTC") for d in SESSIONS]
+    monkeypatch.setattr(cli, "now", lambda: closes[255] + pd.Timedelta(hours=2))
+    monkeypatch.setenv("FINNHUB_API_KEY", "FAKEKEY")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "")
+    process, calls = cli.DailyRun.process, []
+
+    def failing(self, market, day, check, late):
+        calls.append(day)
+        if len(calls) == 2:
+            raise RuntimeError("boom FAKEKEY")
+        return process(self, market, day, check, late)
+
+    monkeypatch.setattr(cli.DailyRun, "process", failing)
+    telegram.sent.clear()
+    capsys.readouterr()
+    assert cli.main(["run-daily"]) == 1
+    assert calls == [SESSIONS[254], SESSIONS[255]]
+    assert telegram.sent[0].startswith(f"Market agent, {SESSIONS[254]:%Y-%m-%d}")
+    assert telegram.sent[-1] == (
+        "Daily run failed: RuntimeError: boom <secret>. Details are in data\\daily.log."
+    )
+    assert not any("FAKEKEY" in text for text in telegram.sent)
+    err = capsys.readouterr().err
+    assert "Traceback" in err and "RuntimeError" in err
+    store = Store(tmp_path / "data" / "market.db")
+    assert store.daily_run(SESSIONS[254])["sent"] is True
+    store.close()
+
+
+class BrokenTelegram:
+    def send(self, text):
+        raise ConnectionError("no network")
+
+
+def test_a_crash_whose_alert_cannot_be_sent_is_printed(tmp_path, monkeypatch, capsys):
+    daily_setup(tmp_path, monkeypatch)
+    monkeypatch.setattr(cli, "telegram", BrokenTelegram)
+
+    def failing(self, market, day, check, late):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli.DailyRun, "process", failing)
+    assert cli.main(["run-daily"]) == 1
+    err = capsys.readouterr().err
+    assert "RuntimeError: boom" in err
+    assert "Could not send the failure alert: ConnectionError: no network" in err
