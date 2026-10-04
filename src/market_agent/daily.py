@@ -288,7 +288,8 @@ def send_results(store: Store, results: list[DayResult], telegram: Any) -> list[
         )
         shown = results[-1:]
     messages += [(r.day, r.report) for r in shown]
-    messages += [(None, alert) for r in results for alert in r.alerts if alert != r.report]
+    sent_reports = {r.report for r in shown}
+    messages += [(None, alert) for r in results for alert in r.alerts if alert not in sent_reports]
     for day, text in messages:
         try:
             telegram.send(text)

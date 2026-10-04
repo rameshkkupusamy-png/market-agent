@@ -245,3 +245,17 @@ def test_long_catch_up_sends_one_summary(tmp_path):
     assert len(results) == 5
     assert telegram.sent[0].startswith("Caught up 4 missed trading days")
     assert telegram.sent[1] == results[-1].report
+
+
+def test_long_catch_up_still_sends_no_trading_alerts(tmp_path):
+    w = make_world(tmp_path, frames={"AAA": aaa_bars(), "SPY": spy_bars().drop(SESSIONS[252])})
+    run(w, after_close(250))
+    results = run(w, after_close(255), wait=False)
+    assert len(results) == 5
+    skipped = next(r for r in results if r.day == SESSIONS[252])
+    assert skipped.status == "no trading"
+    telegram = FakeTelegram()
+    send_results(w.store, results, telegram)
+    assert telegram.sent[0].startswith("Caught up 4 missed trading days")
+    assert telegram.sent[1] == results[-1].report
+    assert telegram.sent[2:] == [skipped.report]
