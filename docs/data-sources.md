@@ -26,3 +26,17 @@ from `Adj Close` / `Close`, as `auto_adjust=True` does, and the as-traded close 
 undoing every later split in `Ticker.splits`. Yahoo records the 2022 AT&T/WarnerMedia spin-off as
 a split, so T's as-traded price comes out right too. `Ticker.splits` costs one extra request per
 ticker.
+
+## Plan 2 sources (checked 2026-10-04)
+
+| Need | Source | Finding |
+|---|---|---|
+| Company news | Finnhub `company-news` (free key) | AAPL 243 / NVDA 249 / BRK.B 66 items in 7 days; fields category, datetime, headline, id, image, related, source, summary, url |
+| Trading days | `exchange_calendars` XNYS (offline) | 2026-11-26 closed; 2026-11-27 closes 18:00 UTC; sessions tz-naive |
+| Messages | Telegram Bot API `sendMessage` | test message delivered |
+| AI review | Claude `claude-opus-5-5`, effort low, JSON schema output | 257/211 tokens for a short request |
+
+Consequences: none. Notes: `BRK.B` (dot) works with Finnhub. The Claude request accepted `betas`,
+`fallbacks="default"` and `effort`; the response model was `claude-opus-5-5`, stop reason
+`end_turn`, and its content held an empty `thinking` block before the `text` block
+(`{"verdict":"flag"}`), so read the text block by type, not by position.
