@@ -9,9 +9,12 @@ from __future__ import annotations
 import csv
 import re
 from bisect import bisect_right
+from collections.abc import Mapping
 from pathlib import Path
 
 import pandas as pd
+
+from market_agent.data.sources import Profile
 
 REMOVED_SUFFIX = re.compile(r"-\d{6}$")  # some datasets mark removed tickers as ABC-201912
 
@@ -49,17 +52,24 @@ class Universe:
         return tickers
 
 
-def load_sectors(path: Path) -> dict[str, str]:
+def load_profiles(path: Path) -> dict[str, Profile]:
     if not path.exists():
         return {}
     with path.open(encoding="utf-8", newline="") as handle:
-        return {row["ticker"]: row["sector"] for row in csv.DictReader(handle)}
+        return {
+            row["ticker"]: Profile(row["sector"], row.get("name") or "")
+            for row in csv.DictReader(handle)
+        }
 
 
-def write_sectors(path: Path, sectors: dict[str, str]) -> None:
+def load_sectors(path: Path) -> dict[str, str]:
+    return {ticker: p.sector for ticker, p in load_profiles(path).items()}
+
+
+def write_profiles(path: Path, profiles: Mapping[str, Profile]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["ticker", "sector"])
-        for ticker in sorted(sectors):
-            writer.writerow([ticker, sectors[ticker]])
+        writer.writerow(["ticker", "sector", "name"])
+        for ticker in sorted(profiles):
+            writer.writerow([ticker, profiles[ticker].sector, profiles[ticker].name])

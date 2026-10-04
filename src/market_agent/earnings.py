@@ -34,3 +34,9 @@ class EarningsCalendar:
     def known(self, ticker: str, day: pd.Timestamp) -> bool:
         start = self._coverage.get(ticker)
         return start is not None and start <= day
+
+    def next_report(self, ticker: str, day: pd.Timestamp) -> pd.Timestamp | None:
+        """The first known report after `day`."""
+        dates = self._dates.get(ticker, [])
+        index = bisect_right(dates, day)
+        return dates[index] if index < len(dates) else None

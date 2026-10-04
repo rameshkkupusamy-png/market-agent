@@ -97,3 +97,13 @@ def test_reports_within_uses_trading_days():
     assert cal.reports_within("A", days[11], 5) is False
     assert cal.known("A", days[0]) is True
     assert cal.known("B", days[0]) is False
+
+
+def test_next_report():
+    days = list(pd.bdate_range("2024-01-01", periods=10))
+    dates = [pd.Timestamp("2024-01-03"), pd.Timestamp("2024-01-10")]
+    calendar = EarningsCalendar({"AAA": EarningsHistory(dates, days[0])}, days)
+    assert calendar.next_report("AAA", pd.Timestamp("2024-01-03")) == pd.Timestamp("2024-01-10")
+    assert calendar.next_report("AAA", pd.Timestamp("2024-01-02")) == pd.Timestamp("2024-01-03")
+    assert calendar.next_report("AAA", pd.Timestamp("2024-01-10")) is None
+    assert calendar.next_report("ZZZ", pd.Timestamp("2024-01-02")) is None

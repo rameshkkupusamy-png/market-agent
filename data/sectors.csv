@@ -1,626 +1,626 @@
-ticker,sector
-A,Healthcare
-AAL,Industrials
-AAP,Consumer Cyclical
-AAPL,Technology
-ABBV,Healthcare
-ABNB,Consumer Cyclical
-ABT,Healthcare
-ACGL,Financial Services
-ACN,Technology
-ADBE,Technology
-ADI,Technology
-ADM,Consumer Defensive
-ADP,Technology
-ADSK,Technology
-ADT,Industrials
-AEE,Utilities
-AEP,Utilities
-AES,Utilities
-AFL,Financial Services
-AIG,Financial Services
-AIV,Real Estate
-AIZ,Financial Services
-AJG,Financial Services
-AKAM,Technology
-ALB,Basic Materials
-ALGN,Healthcare
-ALK,Industrials
-ALL,Financial Services
-ALLE,Industrials
-AMAT,Technology
-AMCR,Consumer Cyclical
-AMD,Technology
-AME,Industrials
-AMG,Financial Services
-AMGN,Healthcare
-AMP,Financial Services
-AMT,Real Estate
-AMTM,Industrials
-AMZN,Consumer Cyclical
-AN,Consumer Cyclical
-ANET,Technology
-AON,Financial Services
-AOS,Industrials
-APA,Energy
-APC,Energy
-APD,Basic Materials
-APH,Technology
-APO,Financial Services
-APP,Communication Services
-APTV,Consumer Cyclical
-ARE,Real Estate
-ARES,Financial Services
-ATI,Industrials
-ATO,Utilities
-AVB,Real Estate
-AVGO,Technology
-AVY,Consumer Cyclical
-AWK,Utilities
-AXON,Industrials
-AXP,Financial Services
-AYI,Industrials
-AZO,Consumer Cyclical
-BA,Industrials
-BAC,Financial Services
-BALL,Consumer Cyclical
-BAX,Healthcare
-BBBY,Unknown
-BBT,Financial Services
-BBWI,Consumer Cyclical
-BBY,Consumer Cyclical
-BDX,Healthcare
-BEAM,Healthcare
-BEN,Financial Services
-BF.B,Consumer Defensive
-BG,Consumer Defensive
-BHF,Financial Services
-BIIB,Healthcare
-BIO,Healthcare
-BKNG,Consumer Cyclical
-BKR,Energy
-BLDR,Industrials
-BLK,Financial Services
-BMY,Healthcare
-BNY,Financial Services
-BR,Technology
-BRK.B,Financial Services
-BRO,Financial Services
-BSX,Healthcare
-BWA,Consumer Cyclical
-BX,Financial Services
-BXP,Real Estate
-C,Financial Services
-CAG,Consumer Defensive
-CAH,Healthcare
-CAM,Unknown
-CARR,Industrials
-CASY,Consumer Cyclical
-CAT,Industrials
-CB,Financial Services
-CBOE,Financial Services
-CBRE,Real Estate
-CCEP,Consumer Defensive
-CCI,Real Estate
-CCL,Consumer Cyclical
-CDNS,Technology
-CDW,Technology
-CE,Basic Materials
-CEG,Utilities
-CF,Basic Materials
-CFG,Financial Services
-CHD,Consumer Defensive
-CHRW,Industrials
-CHTR,Communication Services
-CI,Healthcare
-CIEN,Technology
-CINF,Financial Services
-CL,Consumer Defensive
-CLF,Basic Materials
-CLX,Consumer Defensive
-CMCSA,Communication Services
-CME,Financial Services
-CMG,Consumer Cyclical
-CMI,Industrials
-CMS,Utilities
-CNC,Healthcare
-CNP,Utilities
-CNX,Energy
-COF,Financial Services
-COHR,Technology
-COIN,Financial Services
-COO,Healthcare
-COP,Energy
-COR,Healthcare
-COST,Consumer Defensive
-COTY,Consumer Defensive
-CPAY,Technology
-CPB,Consumer Defensive
-CPRI,Consumer Cyclical
-CPRT,Industrials
-CPT,Real Estate
-CRH,Basic Materials
-CRL,Healthcare
-CRM,Technology
-CRWD,Technology
-CSCO,Technology
-CSGP,Real Estate
-CSRA,Unknown
-CSX,Industrials
-CTAS,Industrials
-CTSH,Technology
-CTVA,Basic Materials
-CVNA,Consumer Cyclical
-CVS,Healthcare
-CVX,Energy
-CZR,Consumer Cyclical
-D,Utilities
-DAL,Industrials
-DASH,Consumer Cyclical
-DD,Basic Materials
-DDOG,Technology
-DE,Industrials
-DECK,Consumer Cyclical
-DELL,Technology
-DG,Consumer Defensive
-DGX,Healthcare
-DHI,Consumer Cyclical
-DHR,Healthcare
-DIS,Communication Services
-DLR,Real Estate
-DLTR,Consumer Defensive
-DOC,Real Estate
-DOV,Industrials
-DOW,Basic Materials
-DPZ,Consumer Cyclical
-DRI,Consumer Cyclical
-DTE,Utilities
-DUK,Utilities
-DVA,Healthcare
-DVN,Energy
-DXC,Technology
-DXCM,Healthcare
-EA,Communication Services
-EBAY,Consumer Cyclical
-ECHO,Communication Services
-ECL,Basic Materials
-ED,Utilities
-EFX,Industrials
-EG,Financial Services
-EIX,Utilities
-EL,Consumer Defensive
-ELV,Healthcare
-EMC,Unknown
-EME,Industrials
-EMN,Basic Materials
-EMR,Industrials
-ENPH,Technology
-EOG,Energy
-EPAM,Technology
-EQIX,Real Estate
-EQR,Real Estate
-EQT,Energy
-ERIE,Financial Services
-ES,Utilities
-ESS,Real Estate
-ETN,Industrials
-ETR,Utilities
-ETSY,Consumer Cyclical
-EVRG,Utilities
-EW,Healthcare
-EXC,Utilities
-EXE,Energy
-EXPD,Industrials
-EXPE,Consumer Cyclical
-EXR,Real Estate
-F,Consumer Cyclical
-FANG,Energy
-FAST,Industrials
-FB,Unknown
-FCPT,Real Estate
-FCX,Basic Materials
-FDS,Financial Services
-FDX,Industrials
-FDXF,Industrials
-FE,Utilities
-FERG,Industrials
-FFIV,Technology
-FICO,Technology
-FIS,Technology
-FISV,Unknown
-FITB,Financial Services
-FIX,Industrials
-FLEX,Technology
-FLR,Industrials
-FLS,Industrials
-FMC,Basic Materials
-FOSL,Consumer Cyclical
-FOX,Communication Services
-FOXA,Communication Services
-FRT,Real Estate
-FSLR,Technology
-FTI,Energy
-FTNT,Technology
-FTV,Technology
-GD,Industrials
-GDDY,Technology
-GE,Industrials
-GEHC,Healthcare
-GEN,Technology
-GEV,Industrials
-GHC,Industrials
-GILD,Healthcare
-GIS,Consumer Defensive
-GL,Financial Services
-GLW,Technology
-GM,Consumer Cyclical
-GME,Consumer Cyclical
-GNRC,Industrials
-GNW,Financial Services
-GOOG,Communication Services
-GOOGL,Communication Services
-GPC,Consumer Cyclical
-GPN,Industrials
-GRMN,Technology
-GS,Financial Services
-GT,Consumer Cyclical
-GWW,Industrials
-HAL,Energy
-HAS,Consumer Cyclical
-HBAN,Financial Services
-HCA,Healthcare
-HD,Consumer Cyclical
-HIG,Financial Services
-HII,Industrials
-HLT,Consumer Cyclical
-HOG,Consumer Cyclical
-HON,Industrials
-HONA,Industrials
-HOOD,Financial Services
-HP,Energy
-HPE,Technology
-HPQ,Technology
-HRB,Consumer Cyclical
-HRL,Consumer Defensive
-HSIC,Healthcare
-HST,Real Estate
-HSY,Consumer Defensive
-HUBB,Industrials
-HUM,Healthcare
-HWM,Industrials
-IBKR,Financial Services
-IBM,Technology
-ICE,Financial Services
-IDXX,Healthcare
-IEX,Industrials
-IFF,Basic Materials
-ILMN,Healthcare
-INCY,Healthcare
-INFO,Unknown
-INTC,Technology
-INTU,Technology
-INVH,Real Estate
-IP,Consumer Cyclical
-IPGP,Technology
-IQV,Healthcare
-IR,Industrials
-IRM,Real Estate
-ISRG,Healthcare
-IT,Technology
-ITW,Industrials
-IVZ,Financial Services
-J,Industrials
-JBHT,Industrials
-JBL,Technology
-JCI,Industrials
-JEF,Financial Services
-JKHY,Technology
-JNJ,Healthcare
-JPM,Financial Services
-KDP,Consumer Defensive
-KEY,Financial Services
-KEYS,Technology
-KHC,Consumer Defensive
-KIM,Real Estate
-KKR,Financial Services
-KLAC,Technology
-KMB,Consumer Defensive
-KMI,Energy
-KMX,Consumer Cyclical
-KO,Consumer Defensive
-KR,Consumer Defensive
-KSS,Consumer Cyclical
-KVUE,Consumer Defensive
-L,Financial Services
-LB,Energy
-LDOS,Technology
-LEG,Consumer Cyclical
-LEN,Consumer Cyclical
-LH,Healthcare
-LHX,Industrials
-LIFE,Financial Services
-LII,Industrials
-LIN,Basic Materials
-LITE,Technology
-LKQ,Consumer Cyclical
-LLY,Healthcare
-LMT,Industrials
-LNC,Financial Services
-LNT,Utilities
-LOW,Consumer Cyclical
-LRCX,Technology
-LULU,Consumer Cyclical
-LUMN,Communication Services
-LUV,Industrials
-LVS,Consumer Cyclical
-LW,Consumer Defensive
-LYB,Basic Materials
-LYV,Communication Services
-M,Consumer Cyclical
-MA,Financial Services
-MAA,Real Estate
-MAC,Real Estate
-MAR,Consumer Cyclical
-MAS,Industrials
-MAT,Consumer Cyclical
-MCD,Consumer Cyclical
-MCHP,Technology
-MCK,Healthcare
-MCO,Financial Services
-MDLZ,Consumer Defensive
-MDT,Healthcare
-MET,Financial Services
-META,Communication Services
-MGM,Consumer Cyclical
-MHK,Consumer Cyclical
-MKC,Consumer Defensive
-MKTX,Financial Services
-MLM,Basic Materials
-MMM,Industrials
-MNST,Consumer Defensive
-MO,Consumer Defensive
-MOH,Healthcare
-MOS,Basic Materials
-MPC,Energy
-MPWR,Technology
-MRK,Healthcare
-MRNA,Healthcare
-MRSH,Financial Services
-MRVL,Technology
-MS,Financial Services
-MSCI,Financial Services
-MSFT,Technology
-MSI,Technology
-MTB,Financial Services
-MTCH,Communication Services
-MTD,Healthcare
-MU,Technology
-MUR,Energy
-NAVI,Financial Services
-NBR,Energy
-NCLH,Consumer Cyclical
-NDAQ,Financial Services
-NDSN,Industrials
-NE,Energy
-NEE,Utilities
-NEM,Basic Materials
-NFLX,Communication Services
-NFX,Unknown
-NI,Utilities
-NKE,Consumer Cyclical
-NKTR,Healthcare
-NOC,Industrials
-NOV,Energy
-NOW,Technology
-NRG,Utilities
-NSC,Industrials
-NTAP,Technology
-NTRS,Financial Services
-NUE,Basic Materials
-NVDA,Technology
-NVR,Consumer Cyclical
-NWL,Consumer Defensive
-NWS,Communication Services
-NWSA,Communication Services
-NXPI,Technology
-O,Real Estate
-ODFL,Industrials
-OGN,Healthcare
-OI,Consumer Cyclical
-OKE,Energy
-OMC,Communication Services
-ON,Technology
-ORCL,Technology
-ORLY,Consumer Cyclical
-OTIS,Industrials
-OXY,Energy
-PANW,Technology
-PARA,Technology
-PAYC,Technology
-PAYX,Technology
-PBI,Industrials
-PCAR,Industrials
-PCG,Utilities
-PCL,Unknown
-PEG,Utilities
-PENN,Consumer Cyclical
-PEP,Consumer Defensive
-PFE,Healthcare
-PFG,Financial Services
-PG,Consumer Defensive
-PGR,Financial Services
-PH,Industrials
-PHM,Consumer Cyclical
-PKG,Consumer Cyclical
-PLD,Real Estate
-PLTR,Technology
-PM,Consumer Defensive
-PNC,Financial Services
-PNR,Industrials
-PNW,Utilities
-PODD,Healthcare
-POM,Healthcare
-POOL,Industrials
-PPG,Basic Materials
-PPL,Utilities
-PRGO,Healthcare
-PRU,Financial Services
-PSA,Real Estate
-PSKY,Communication Services
-PSX,Energy
-PTC,Technology
-PVH,Consumer Cyclical
-PWR,Industrials
-PYPL,Financial Services
-Q,Technology
-QCOM,Technology
-QRVO,Technology
-R,Industrials
-RCL,Consumer Cyclical
-RDDT,Communication Services
-REG,Real Estate
-REGN,Healthcare
-RF,Financial Services
-RHI,Industrials
-RIG,Energy
-RJF,Financial Services
-RL,Consumer Cyclical
-RMD,Healthcare
-ROK,Industrials
-ROL,Consumer Cyclical
-ROP,Technology
-ROST,Consumer Cyclical
-RRC,Energy
-RSG,Industrials
-RTX,Industrials
-RVTY,Healthcare
-SBAC,Real Estate
-SBNY,Financial Services
-SBUX,Consumer Cyclical
-SCHW,Financial Services
-SE,Consumer Cyclical
-SEDG,Technology
-SHW,Basic Materials
-SIG,Consumer Cyclical
-SJM,Consumer Defensive
-SLB,Energy
-SLG,Real Estate
-SLM,Financial Services
-SMCI,Technology
-SNA,Industrials
-SNDK,Technology
-SNPS,Technology
-SO,Utilities
-SOLS,Basic Materials
-SOLV,Healthcare
-SPG,Real Estate
-SPGI,Financial Services
-SPLS,Unknown
-SRE,Utilities
-STE,Healthcare
-STI,Industrials
-STLD,Basic Materials
-STT,Financial Services
-STX,Technology
-STZ,Consumer Defensive
-SW,Consumer Cyclical
-SWK,Industrials
-SWKS,Technology
-SYF,Financial Services
-SYK,Healthcare
-SYY,Consumer Defensive
-T,Communication Services
-TAP,Consumer Defensive
-TDC,Technology
-TDG,Industrials
-TDY,Technology
-TE,Industrials
-TECH,Healthcare
-TEL,Technology
-TER,Technology
-TFC,Financial Services
-TFX,Healthcare
-TGT,Consumer Defensive
-THC,Healthcare
-TJX,Consumer Cyclical
-TKO,Communication Services
-TMO,Healthcare
-TMUS,Communication Services
-TPL,Energy
-TPR,Consumer Cyclical
-TRGP,Energy
-TRIP,Consumer Cyclical
-TRMB,Technology
-TROW,Financial Services
-TRV,Financial Services
-TSCO,Consumer Cyclical
-TSLA,Consumer Cyclical
-TSN,Consumer Defensive
-TT,Industrials
-TTD,Communication Services
-TTWO,Communication Services
-TXN,Technology
-TXT,Industrials
-TYL,Technology
-UA,Consumer Cyclical
-UAA,Consumer Cyclical
-UAL,Industrials
-UBER,Technology
-UDR,Real Estate
-UHS,Healthcare
-ULTA,Consumer Cyclical
-UNH,Healthcare
-UNM,Financial Services
-UNP,Industrials
-UPS,Industrials
-URBN,Consumer Cyclical
-URI,Industrials
-USB,Financial Services
-V,Financial Services
-VEEV,Healthcare
-VFC,Consumer Cyclical
-VICI,Real Estate
-VLO,Energy
-VLTO,Industrials
-VMC,Basic Materials
-VMRK,Real Estate
-VNO,Real Estate
-VNT,Technology
-VRSK,Industrials
-VRSN,Technology
-VRT,Industrials
-VRTX,Healthcare
-VST,Utilities
-VTR,Real Estate
-VTRS,Healthcare
-VZ,Communication Services
-WAB,Industrials
-WAT,Healthcare
-WBD,Communication Services
-WDAY,Technology
-WDC,Technology
-WEC,Utilities
-WELL,Real Estate
-WFC,Financial Services
-WHR,Consumer Cyclical
-WM,Industrials
-WMB,Energy
-WMT,Consumer Defensive
-WRB,Financial Services
-WSM,Consumer Cyclical
-WST,Healthcare
-WTW,Financial Services
-WU,Financial Services
-WY,Real Estate
-WYNN,Consumer Cyclical
-XEL,Utilities
-XOM,Energy
-XRAY,Healthcare
-XRX,Industrials
-XYL,Industrials
-XYZ,Technology
-YUM,Consumer Cyclical
-ZBH,Healthcare
-ZBRA,Technology
-ZION,Financial Services
-ZTS,Healthcare
+ticker,sector,name
+A,Healthcare,"Agilent Technologies, Inc."
+AAL,Industrials,American Airlines Group Inc.
+AAP,Consumer Cyclical,"Advance Auto Parts, Inc."
+AAPL,Technology,Apple Inc.
+ABBV,Healthcare,AbbVie Inc.
+ABNB,Consumer Cyclical,"Airbnb, Inc."
+ABT,Healthcare,Abbott Laboratories
+ACGL,Financial Services,Arch Capital Group Ltd.
+ACN,Technology,Accenture plc
+ADBE,Technology,Adobe Inc.
+ADI,Technology,"Analog Devices, Inc."
+ADM,Consumer Defensive,Archer-Daniels-Midland Company
+ADP,Technology,"Automatic Data Processing, Inc."
+ADSK,Technology,"Autodesk, Inc."
+ADT,Industrials,ADT Inc.
+AEE,Utilities,Ameren Corporation
+AEP,Utilities,"American Electric Power Company, Inc."
+AES,Utilities,The AES Corporation
+AFL,Financial Services,Aflac Incorporated
+AIG,Financial Services,"American International Group, Inc."
+AIV,Real Estate,Apartment Investment and Management Company
+AIZ,Financial Services,"Assurant, Inc."
+AJG,Financial Services,Arthur J. Gallagher & Co.
+AKAM,Technology,"Akamai Technologies, Inc."
+ALB,Basic Materials,Albemarle Corporation
+ALGN,Healthcare,"Align Technology, Inc."
+ALK,Industrials,"Alaska Air Group, Inc."
+ALL,Financial Services,The Allstate Corporation
+ALLE,Industrials,Allegion plc
+AMAT,Technology,"Applied Materials, Inc."
+AMCR,Consumer Cyclical,Amcor plc
+AMD,Technology,"Advanced Micro Devices, Inc."
+AME,Industrials,"AMETEK, Inc."
+AMG,Financial Services,"Affiliated Managers Group, Inc."
+AMGN,Healthcare,Amgen Inc.
+AMP,Financial Services,"Ameriprise Financial, Inc."
+AMT,Real Estate,American Tower Corporation
+AMTM,Industrials,"Amentum Holdings, Inc."
+AMZN,Consumer Cyclical,"Amazon.com, Inc."
+AN,Consumer Cyclical,"AutoNation, Inc."
+ANET,Technology,"Arista Networks, Inc."
+AON,Financial Services,Aon plc
+AOS,Industrials,A. O. Smith Corporation
+APA,Energy,APA Corporation
+APC,Energy,ARKO Petroleum Corp.
+APD,Basic Materials,"Air Products and Chemicals, Inc."
+APH,Technology,Amphenol Corporation
+APO,Financial Services,"Apollo Global Management, Inc."
+APP,Communication Services,AppLovin Corporation
+APTV,Consumer Cyclical,Aptiv PLC
+ARE,Real Estate,"Alexandria Real Estate Equities, Inc."
+ARES,Financial Services,Ares Management Corporation
+ATI,Industrials,ATI Inc.
+ATO,Utilities,Atmos Energy Corporation
+AVB,Real Estate,AvalonBay Communities Inc
+AVGO,Technology,Broadcom Inc.
+AVY,Consumer Cyclical,Avery Dennison Corporation
+AWK,Utilities,"American Water Works Company, Inc."
+AXON,Industrials,"Axon Enterprise, Inc."
+AXP,Financial Services,American Express Company
+AYI,Industrials,Acuity Inc.
+AZO,Consumer Cyclical,"AutoZone, Inc."
+BA,Industrials,The Boeing Company
+BAC,Financial Services,Bank of America Corporation
+BALL,Consumer Cyclical,Ball Corporation
+BAX,Healthcare,Baxter International Inc.
+BBBY,Unknown,"Bed Bath & Beyond, Inc."
+BBT,Financial Services,Beacon Financial Corporation
+BBWI,Consumer Cyclical,"Bath & Body Works, Inc."
+BBY,Consumer Cyclical,"Best Buy Co., Inc."
+BDX,Healthcare,"Becton, Dickinson and Company"
+BEAM,Healthcare,Beam Therapeutics Inc.
+BEN,Financial Services,Franklin Templeton Inc.
+BF.B,Consumer Defensive,Brown-Forman Corporation
+BG,Consumer Defensive,Bunge Global SA
+BHF,Financial Services,"Brighthouse Financial, Inc."
+BIIB,Healthcare,Biogen Inc.
+BIO,Healthcare,"Bio-Rad Laboratories, Inc."
+BKNG,Consumer Cyclical,Booking Holdings Inc.
+BKR,Energy,Baker Hughes Company
+BLDR,Industrials,"Builders FirstSource, Inc."
+BLK,Financial Services,"BlackRock, Inc."
+BMY,Healthcare,Bristol-Myers Squibb Company
+BNY,Financial Services,The Bank of New York Mellon Corporation
+BR,Technology,"Broadridge Financial Solutions, Inc."
+BRK.B,Financial Services,Berkshire Hathaway Inc.
+BRO,Financial Services,"Brown & Brown, Inc."
+BSX,Healthcare,Boston Scientific Corporation
+BWA,Consumer Cyclical,BorgWarner Inc.
+BX,Financial Services,Blackstone Inc.
+BXP,Real Estate,"BXP, Inc."
+C,Financial Services,Citigroup Inc.
+CAG,Consumer Defensive,"Conagra Brands, Inc."
+CAH,Healthcare,"Cardinal Health, Inc."
+CAM,Unknown,AB California Intermediate Municipal ETF
+CARR,Industrials,Carrier Global Corporation
+CASY,Consumer Cyclical,"Casey's General Stores, Inc."
+CAT,Industrials,Caterpillar Inc.
+CB,Financial Services,Chubb Limited
+CBOE,Financial Services,"Cboe Global Markets, Inc."
+CBRE,Real Estate,"CBRE Group, Inc."
+CCEP,Consumer Defensive,Coca-Cola Europacific Partners PLC
+CCI,Real Estate,Crown Castle Inc.
+CCL,Consumer Cyclical,Carnival Corporation Ltd.
+CDNS,Technology,"Cadence Design Systems, Inc."
+CDW,Technology,CDW Corporation
+CE,Basic Materials,Celanese Corporation
+CEG,Utilities,Constellation Energy Corporation
+CF,Basic Materials,"CF Industries Holdings, Inc."
+CFG,Financial Services,"Citizens Financial Group, Inc."
+CHD,Consumer Defensive,"Church & Dwight Co., Inc."
+CHRW,Industrials,"C.H. Robinson Worldwide, Inc."
+CHTR,Communication Services,"Charter Communications, Inc."
+CI,Healthcare,The Cigna Group
+CIEN,Technology,Ciena Corporation
+CINF,Financial Services,Cincinnati Financial Corporation
+CL,Consumer Defensive,Colgate-Palmolive Company
+CLF,Basic Materials,Cleveland-Cliffs Inc.
+CLX,Consumer Defensive,The Clorox Company
+CMCSA,Communication Services,Comcast Corporation
+CME,Financial Services,CME Group Inc.
+CMG,Consumer Cyclical,"Chipotle Mexican Grill, Inc."
+CMI,Industrials,Cummins Inc.
+CMS,Utilities,CMS Energy Corporation
+CNC,Healthcare,Centene Corporation
+CNP,Utilities,"CenterPoint Energy, Inc."
+CNX,Energy,CNX Resources Corporation
+COF,Financial Services,Capital One Financial Corporation
+COHR,Technology,Coherent Corp.
+COIN,Financial Services,"Coinbase Global, Inc."
+COO,Healthcare,"The Cooper Companies, Inc."
+COP,Energy,ConocoPhillips
+COR,Healthcare,"Cencora, Inc."
+COST,Consumer Defensive,Costco Wholesale Corporation
+COTY,Consumer Defensive,Coty Inc.
+CPAY,Technology,"Corpay, Inc."
+CPB,Consumer Defensive,The Campbell's Company
+CPRI,Consumer Cyclical,Capri Holdings Limited
+CPRT,Industrials,"Copart, Inc."
+CPT,Real Estate,Camden Property Trust
+CRH,Basic Materials,CRH plc
+CRL,Healthcare,"Charles River Laboratories International, Inc."
+CRM,Technology,"Salesforce, Inc."
+CRWD,Technology,"CrowdStrike Holdings, Inc."
+CSCO,Technology,"Cisco Systems, Inc."
+CSGP,Real Estate,"CoStar Group, Inc."
+CSRA,Unknown,Cohen & Steers Real Assets Active ETF
+CSX,Industrials,CSX Corporation
+CTAS,Industrials,Cintas Corporation
+CTSH,Technology,Cognizant Technology Solutions Corporation
+CTVA,Basic Materials,"Vylor, Inc."
+CVNA,Consumer Cyclical,Carvana Co.
+CVS,Healthcare,CVS Health Corporation
+CVX,Energy,Chevron Corporation
+CZR,Consumer Cyclical,"Caesars Entertainment, Inc."
+D,Utilities,"Dominion Energy, Inc."
+DAL,Industrials,"Delta Air Lines, Inc."
+DASH,Consumer Cyclical,"DoorDash, Inc."
+DD,Basic Materials,"DuPont de Nemours, Inc."
+DDOG,Technology,"Datadog, Inc."
+DE,Industrials,Deere & Company
+DECK,Consumer Cyclical,Deckers Outdoor Corporation
+DELL,Technology,Dell Technologies Inc.
+DG,Consumer Defensive,Dollar General Corporation
+DGX,Healthcare,Quest Diagnostics Incorporated
+DHI,Consumer Cyclical,"D.R. Horton, Inc."
+DHR,Healthcare,Danaher Corporation
+DIS,Communication Services,The Walt Disney Company
+DLR,Real Estate,"Digital Realty Trust, Inc."
+DLTR,Consumer Defensive,"Dollar Tree, Inc."
+DOC,Real Estate,"Healthpeak Properties, Inc."
+DOV,Industrials,Dover Corporation
+DOW,Basic Materials,Dow Inc.
+DPZ,Consumer Cyclical,"Domino's Pizza, Inc."
+DRI,Consumer Cyclical,"Darden Restaurants, Inc."
+DTE,Utilities,DTE Energy Company
+DUK,Utilities,Duke Energy Corporation
+DVA,Healthcare,DaVita Inc.
+DVN,Energy,Devon Energy Corporation
+DXC,Technology,DXC Technology Company
+DXCM,Healthcare,"DexCom, Inc."
+EA,Communication Services,Electronic Arts Inc
+EBAY,Consumer Cyclical,eBay Inc.
+ECHO,Communication Services,EchoStar Corporation
+ECL,Basic Materials,Ecolab Inc.
+ED,Utilities,"Consolidated Edison, Inc."
+EFX,Industrials,Equifax Inc.
+EG,Financial Services,"Everest Group, Ltd."
+EIX,Utilities,Edison International
+EL,Consumer Defensive,The Estée Lauder Companies Inc.
+ELV,Healthcare,"Elevance Health, Inc."
+EMC,Unknown,Global X Emerging Markets Great Consumer ETF
+EME,Industrials,"EMCOR Group, Inc."
+EMN,Basic Materials,Eastman Chemical Company
+EMR,Industrials,Emerson Electric Co.
+ENPH,Technology,"Enphase Energy, Inc."
+EOG,Energy,"EOG Resources, Inc."
+EPAM,Technology,"EPAM Systems, Inc."
+EQIX,Real Estate,"Equinix, Inc."
+EQR,Real Estate,Equity Residential
+EQT,Energy,EQT Corporation
+ERIE,Financial Services,Erie Indemnity Company
+ES,Utilities,Eversource Energy
+ESS,Real Estate,"Essex Property Trust, Inc."
+ETN,Industrials,Eaton Corporation plc
+ETR,Utilities,Entergy Corporation
+ETSY,Consumer Cyclical,"Etsy, Inc."
+EVRG,Utilities,"Evergy, Inc."
+EW,Healthcare,Edwards Lifesciences Corporation
+EXC,Utilities,Exelon Corporation
+EXE,Energy,Expand Energy Corporation
+EXPD,Industrials,"Expeditors International of Washington, Inc."
+EXPE,Consumer Cyclical,"Expedia Group, Inc."
+EXR,Real Estate,Extra Space Storage Inc.
+F,Consumer Cyclical,Ford Motor Company
+FANG,Energy,"Diamondback Energy, Inc."
+FAST,Industrials,Fastenal Company
+FB,Unknown,ProShares S&P 500 Dynamic Daily Buffer ETF
+FCPT,Real Estate,"Four Corners Property Trust, Inc."
+FCX,Basic Materials,Freeport-McMoRan Inc.
+FDS,Financial Services,FactSet Research Systems Inc.
+FDX,Industrials,FedEx Corporation
+FDXF,Industrials,"FedEx Freight Holding Company, Inc."
+FE,Utilities,FirstEnergy Corp.
+FERG,Industrials,Ferguson Enterprises Inc.
+FFIV,Technology,"F5, Inc."
+FICO,Technology,Fair Isaac Corporation
+FIS,Technology,"Fidelity National Information Services, Inc."
+FISV,Unknown,"Fiserv, Inc."
+FITB,Financial Services,Fifth Third Bancorp
+FIX,Industrials,"Comfort Systems USA, Inc."
+FLEX,Technology,Flex Ltd.
+FLR,Industrials,Fluor Corporation
+FLS,Industrials,Flowserve Corporation
+FMC,Basic Materials,FMC Corporation
+FOSL,Consumer Cyclical,"Fossil Group, Inc."
+FOX,Communication Services,Fox Corporation
+FOXA,Communication Services,Fox Corporation
+FRT,Real Estate,Federal Realty Investment Trust
+FSLR,Technology,"First Solar, Inc."
+FTI,Energy,TechnipFMC plc
+FTNT,Technology,"Fortinet, Inc."
+FTV,Technology,Fortive Corporation
+GD,Industrials,General Dynamics Corporation
+GDDY,Technology,GoDaddy Inc.
+GE,Industrials,GE Aerospace
+GEHC,Healthcare,GE HealthCare Technologies Inc.
+GEN,Technology,Gen Digital Inc.
+GEV,Industrials,GE Vernova Inc.
+GHC,Industrials,Graham Holdings Company
+GILD,Healthcare,"Gilead Sciences, Inc."
+GIS,Consumer Defensive,"General Mills, Inc."
+GL,Financial Services,Globe Life Inc.
+GLW,Technology,Corning Incorporated
+GM,Consumer Cyclical,General Motors Company
+GME,Consumer Cyclical,GameStop Corp.
+GNRC,Industrials,Generac Holdings Inc.
+GNW,Financial Services,"Genworth Financial, Inc."
+GOOG,Communication Services,Alphabet Inc.
+GOOGL,Communication Services,Alphabet Inc.
+GPC,Consumer Cyclical,Genuine Parts Company
+GPN,Industrials,Global Payments Inc.
+GRMN,Technology,Garmin Ltd.
+GS,Financial Services,"The Goldman Sachs Group, Inc."
+GT,Consumer Cyclical,The Goodyear Tire & Rubber Company
+GWW,Industrials,"W.W. Grainger, Inc."
+HAL,Energy,Halliburton Company
+HAS,Consumer Cyclical,"Hasbro, Inc."
+HBAN,Financial Services,Huntington Bancshares Incorporated
+HCA,Healthcare,"HCA Healthcare, Inc."
+HD,Consumer Cyclical,"The Home Depot, Inc."
+HIG,Financial Services,"The Hartford Insurance Group, Inc."
+HII,Industrials,"Huntington Ingalls Industries, Inc."
+HLT,Consumer Cyclical,Hilton Worldwide Holdings Inc.
+HOG,Consumer Cyclical,"Harley-Davidson, Inc."
+HON,Industrials,Honeywell International Inc.
+HONA,Industrials,Honeywell Aerospace Inc.
+HOOD,Financial Services,"Robinhood Markets, Inc."
+HP,Energy,"Helmerich & Payne, Inc."
+HPE,Technology,Hewlett Packard Enterprise Company
+HPQ,Technology,HP Inc.
+HRB,Consumer Cyclical,"H&R Block, Inc."
+HRL,Consumer Defensive,Hormel Foods Corporation
+HSIC,Healthcare,"Henry Schein, Inc."
+HST,Real Estate,"Host Hotels & Resorts, Inc."
+HSY,Consumer Defensive,The Hershey Company
+HUBB,Industrials,Hubbell Incorporated
+HUM,Healthcare,Humana Inc.
+HWM,Industrials,Howmet Aerospace Inc.
+IBKR,Financial Services,"Interactive Brokers Group, Inc."
+IBM,Technology,International Business Machines Corporation
+ICE,Financial Services,"Intercontinental Exchange, Inc."
+IDXX,Healthcare,"IDEXX Laboratories, Inc."
+IEX,Industrials,IDEX Corporation
+IFF,Basic Materials,International Flavors & Fragrances Inc.
+ILMN,Healthcare,"Illumina, Inc."
+INCY,Healthcare,Incyte Corporation
+INFO,Unknown,Harbor PanAgora Dynamic Large Cap Core ETF
+INTC,Technology,Intel Corporation
+INTU,Technology,Intuit Inc.
+INVH,Real Estate,Invitation Homes Inc.
+IP,Consumer Cyclical,International Paper Company
+IPGP,Technology,IPG Photonics Corporation
+IQV,Healthcare,IQVIA Holdings Inc.
+IR,Industrials,Ingersoll Rand Inc.
+IRM,Real Estate,Iron Mountain Incorporated
+ISRG,Healthcare,"Intuitive Surgical, Inc."
+IT,Technology,"Gartner, Inc."
+ITW,Industrials,Illinois Tool Works Inc.
+IVZ,Financial Services,Invesco Ltd.
+J,Industrials,Jacobs Solutions Inc.
+JBHT,Industrials,"J.B. Hunt Transport Services, Inc."
+JBL,Technology,Jabil Inc.
+JCI,Industrials,Johnson Controls International plc
+JEF,Financial Services,Jefferies Financial Group Inc.
+JKHY,Technology,"Jack Henry & Associates, Inc."
+JNJ,Healthcare,Johnson & Johnson
+JPM,Financial Services,JPMorgan Chase & Co.
+KDP,Consumer Defensive,Keurig Dr Pepper Inc.
+KEY,Financial Services,KeyCorp
+KEYS,Technology,"Keysight Technologies, Inc."
+KHC,Consumer Defensive,The Kraft Heinz Company
+KIM,Real Estate,Kimco Realty Corporation
+KKR,Financial Services,KKR & Co. Inc.
+KLAC,Technology,KLA Corporation
+KMB,Consumer Defensive,Kimberly-Clark Corporation
+KMI,Energy,"Kinder Morgan, Inc."
+KMX,Consumer Cyclical,"CarMax, Inc."
+KO,Consumer Defensive,The Coca-Cola Company
+KR,Consumer Defensive,The Kroger Co.
+KSS,Consumer Cyclical,Kohl's Corporation
+KVUE,Consumer Defensive,Kenvue Inc.
+L,Financial Services,Loews Corporation
+LB,Energy,LandBridge Company LLC
+LDOS,Technology,"Leidos Holdings, Inc."
+LEG,Consumer Cyclical,Leggett & Platt Inc
+LEN,Consumer Cyclical,Lennar Corporation
+LH,Healthcare,Labcorp Holdings Inc.
+LHX,Industrials,"L3Harris Technologies, Inc."
+LIFE,Financial Services,Ethos Technologies Inc.
+LII,Industrials,Lennox International Inc.
+LIN,Basic Materials,Linde plc
+LITE,Technology,Lumentum Holdings Inc.
+LKQ,Consumer Cyclical,LKQ Corporation
+LLY,Healthcare,Eli Lilly and Company
+LMT,Industrials,Lockheed Martin Corporation
+LNC,Financial Services,Lincoln National Corporation
+LNT,Utilities,Alliant Energy Corporation
+LOW,Consumer Cyclical,"Lowe's Companies, Inc."
+LRCX,Technology,Lam Research Corporation
+LULU,Consumer Cyclical,lululemon athletica inc.
+LUMN,Communication Services,"Lumen Technologies, Inc."
+LUV,Industrials,Southwest Airlines Co.
+LVS,Consumer Cyclical,Las Vegas Sands Corp.
+LW,Consumer Defensive,"Lamb Weston Holdings, Inc."
+LYB,Basic Materials,LyondellBasell Industries N.V.
+LYV,Communication Services,"Live Nation Entertainment, Inc."
+M,Consumer Cyclical,"Macy's, Inc."
+MA,Financial Services,Mastercard Incorporated
+MAA,Real Estate,"Mid-America Apartment Communities, Inc."
+MAC,Real Estate,The Macerich Company
+MAR,Consumer Cyclical,"Marriott International, Inc."
+MAS,Industrials,Masco Corporation
+MAT,Consumer Cyclical,"Mattel, Inc."
+MCD,Consumer Cyclical,McDonald's Corporation
+MCHP,Technology,Microchip Technology Incorporated
+MCK,Healthcare,McKesson Corporation
+MCO,Financial Services,Moody's Corporation
+MDLZ,Consumer Defensive,"Mondelez International, Inc."
+MDT,Healthcare,Medtronic plc
+MET,Financial Services,"MetLife, Inc."
+META,Communication Services,"Meta Platforms, Inc."
+MGM,Consumer Cyclical,MGM Resorts International
+MHK,Consumer Cyclical,"Mohawk Industries, Inc."
+MKC,Consumer Defensive,"McCormick & Company, Incorporated"
+MKTX,Financial Services,MarketAxess Holdings Inc.
+MLM,Basic Materials,"Martin Marietta Materials, Inc."
+MMM,Industrials,3M Company
+MNST,Consumer Defensive,Monster Beverage Corporation
+MO,Consumer Defensive,"Altria Group, Inc."
+MOH,Healthcare,"Molina Healthcare, Inc."
+MOS,Basic Materials,The Mosaic Company
+MPC,Energy,Marathon Petroleum Corporation
+MPWR,Technology,"Monolithic Power Systems, Inc."
+MRK,Healthcare,"Merck & Co., Inc."
+MRNA,Healthcare,"Moderna, Inc."
+MRSH,Financial Services,"Marsh & McLennan Companies, Inc."
+MRVL,Technology,"Marvell Technology, Inc."
+MS,Financial Services,Morgan Stanley
+MSCI,Financial Services,MSCI Inc.
+MSFT,Technology,Microsoft Corporation
+MSI,Technology,"Motorola Solutions, Inc."
+MTB,Financial Services,M&T Bank Corporation
+MTCH,Communication Services,"Match Group, Inc."
+MTD,Healthcare,Mettler-Toledo International Inc.
+MU,Technology,"Micron Technology, Inc."
+MUR,Energy,Murphy Oil Corporation
+NAVI,Financial Services,Navient Corporation
+NBR,Energy,Nabors Industries Ltd.
+NCLH,Consumer Cyclical,Norwegian Cruise Line Holdings Ltd.
+NDAQ,Financial Services,"Nasdaq, Inc."
+NDSN,Industrials,Nordson Corporation
+NE,Energy,Noble Corporation plc
+NEE,Utilities,"NextEra Energy, Inc."
+NEM,Basic Materials,Newmont Corporation
+NFLX,Communication Services,"Netflix, Inc."
+NFX,Unknown,Corgi NFLX 2x Daily ETF
+NI,Utilities,NiSource Inc.
+NKE,Consumer Cyclical,"NIKE, Inc."
+NKTR,Healthcare,Nektar Therapeutics
+NOC,Industrials,Northrop Grumman Corporation
+NOV,Energy,NOV Inc.
+NOW,Technology,"ServiceNow, Inc."
+NRG,Utilities,"NRG Energy, Inc."
+NSC,Industrials,Norfolk Southern Corporation
+NTAP,Technology,"NetApp, Inc."
+NTRS,Financial Services,Northern Trust Corporation
+NUE,Basic Materials,Nucor Corporation
+NVDA,Technology,NVIDIA Corporation
+NVR,Consumer Cyclical,"NVR, Inc."
+NWL,Consumer Defensive,Newell Brands Inc.
+NWS,Communication Services,News Corporation
+NWSA,Communication Services,News Corporation
+NXPI,Technology,NXP Semiconductors N.V.
+O,Real Estate,Realty Income Corporation
+ODFL,Industrials,"Old Dominion Freight Line, Inc."
+OGN,Healthcare,Organon & Co.
+OI,Consumer Cyclical,"O-I Glass, Inc."
+OKE,Energy,"ONEOK, Inc."
+OMC,Communication Services,Omnicom Group Inc.
+ON,Technology,ON Semiconductor Corporation
+ORCL,Technology,Oracle Corporation
+ORLY,Consumer Cyclical,"O'Reilly Automotive, Inc."
+OTIS,Industrials,Otis Worldwide Corporation
+OXY,Energy,Occidental Petroleum Corporation
+PANW,Technology,"Palo Alto Networks, Inc."
+PARA,Technology,"Banzai International, Inc."
+PAYC,Technology,"Paycom Software, Inc."
+PAYX,Technology,"Paychex, Inc."
+PBI,Industrials,Pitney Bowes Inc.
+PCAR,Industrials,PACCAR Inc
+PCG,Utilities,PG&E Corporation
+PCL,Unknown,PGIM Corporate Bond 10+ Year ETF
+PEG,Utilities,Public Service Enterprise Group Incorporated
+PENN,Consumer Cyclical,"PENN Entertainment, Inc."
+PEP,Consumer Defensive,"PepsiCo, Inc."
+PFE,Healthcare,Pfizer Inc.
+PFG,Financial Services,"Principal Financial Group, Inc."
+PG,Consumer Defensive,The Procter & Gamble Company
+PGR,Financial Services,The Progressive Corporation
+PH,Industrials,Parker-Hannifin Corporation
+PHM,Consumer Cyclical,"PulteGroup, Inc."
+PKG,Consumer Cyclical,Packaging Corporation of America
+PLD,Real Estate,"Prologis, Inc."
+PLTR,Technology,Palantir Technologies Inc.
+PM,Consumer Defensive,Philip Morris International Inc.
+PNC,Financial Services,"The PNC Financial Services Group, Inc."
+PNR,Industrials,Pentair plc
+PNW,Utilities,Pinnacle West Capital Corporation
+PODD,Healthcare,Insulet Corporation
+POM,Healthcare,Pomdoctor Limited
+POOL,Industrials,Pool Corporation
+PPG,Basic Materials,"PPG Industries, Inc."
+PPL,Utilities,PPL Corporation
+PRGO,Healthcare,Perrigo Company plc
+PRU,Financial Services,"Prudential Financial, Inc."
+PSA,Real Estate,Public Storage
+PSKY,Communication Services,Paramount Skydance Corporation
+PSX,Energy,Phillips 66
+PTC,Technology,PTC Inc.
+PVH,Consumer Cyclical,PVH Corp.
+PWR,Industrials,"Quanta Services, Inc."
+PYPL,Financial Services,"PayPal Holdings, Inc."
+Q,Technology,"Qnity Electronics, Inc."
+QCOM,Technology,QUALCOMM Incorporated
+QRVO,Technology,"Qorvo, Inc."
+R,Industrials,"Ryder System, Inc."
+RCL,Consumer Cyclical,Royal Caribbean Cruises Ltd.
+RDDT,Communication Services,"Reddit, Inc."
+REG,Real Estate,Regency Centers Corporation
+REGN,Healthcare,"Regeneron Pharmaceuticals, Inc."
+RF,Financial Services,Regions Financial Corporation
+RHI,Industrials,Robert Half Inc.
+RIG,Energy,Transocean Ltd.
+RJF,Financial Services,"Raymond James Financial, Inc."
+RL,Consumer Cyclical,Ralph Lauren Corporation
+RMD,Healthcare,ResMed Inc.
+ROK,Industrials,"Rockwell Automation, Inc."
+ROL,Consumer Cyclical,"Rollins, Inc."
+ROP,Technology,"Roper Technologies, Inc."
+ROST,Consumer Cyclical,"Ross Stores, Inc."
+RRC,Energy,Range Resources Corporation
+RSG,Industrials,"Republic Services, Inc."
+RTX,Industrials,RTX Corporation
+RVTY,Healthcare,"Revvity, Inc."
+SBAC,Real Estate,SBA Communications Corporation
+SBNY,Financial Services,Signature Bank
+SBUX,Consumer Cyclical,Starbucks Corporation
+SCHW,Financial Services,The Charles Schwab Corporation
+SE,Consumer Cyclical,Sea Limited
+SEDG,Technology,"SolarEdge Technologies, Inc."
+SHW,Basic Materials,The Sherwin-Williams Company
+SIG,Consumer Cyclical,Signet Jewelers Limited
+SJM,Consumer Defensive,The J. M. Smucker Company
+SLB,Energy,SLB N.V.
+SLG,Real Estate,SL Green Realty Corp.
+SLM,Financial Services,SLM Corporation
+SMCI,Technology,"Super Micro Computer, Inc."
+SNA,Industrials,Snap-on Incorporated
+SNDK,Technology,Sandisk Corporation
+SNPS,Technology,"Synopsys, Inc."
+SO,Utilities,The Southern Company
+SOLS,Basic Materials,"Solstice Advanced Materials, Inc."
+SOLV,Healthcare,Solventum Corporation
+SPG,Real Estate,"Simon Property Group, Inc."
+SPGI,Financial Services,S&P Global Inc.
+SPLS,Unknown,PIMCO US Stocks PLUS Active Bond Exchange Traded Fund
+SRE,Utilities,Sempra
+STE,Healthcare,STERIS plc
+STI,Industrials,"Solidion Technology, Inc."
+STLD,Basic Materials,"Steel Dynamics, Inc."
+STT,Financial Services,State Street Corporation
+STX,Technology,Seagate Technology Holdings plc
+STZ,Consumer Defensive,"Constellation Brands, Inc."
+SW,Consumer Cyclical,Smurfit Westrock Plc
+SWK,Industrials,"Stanley Black & Decker, Inc."
+SWKS,Technology,"Skyworks Solutions, Inc."
+SYF,Financial Services,Synchrony Financial
+SYK,Healthcare,Stryker Corporation
+SYY,Consumer Defensive,Sysco Corporation
+T,Communication Services,AT&T Inc.
+TAP,Consumer Defensive,Molson Coors Beverage Company
+TDC,Technology,Teradata Corporation
+TDG,Industrials,TransDigm Group Incorporated
+TDY,Technology,Teledyne Technologies Incorporated
+TE,Industrials,T1 Energy Inc.
+TECH,Healthcare,Bio-Techne Corporation
+TEL,Technology,TE Connectivity plc
+TER,Technology,"Teradyne, Inc."
+TFC,Financial Services,Truist Financial Corporation
+TFX,Healthcare,Teleflex Incorporated
+TGT,Consumer Defensive,Target Corporation
+THC,Healthcare,Tenet Healthcare Corporation
+TJX,Consumer Cyclical,"The TJX Companies, Inc."
+TKO,Communication Services,"TKO Group Holdings, Inc."
+TMO,Healthcare,Thermo Fisher Scientific Inc.
+TMUS,Communication Services,"T-Mobile US, Inc."
+TPL,Energy,Texas Pacific Land Corporation
+TPR,Consumer Cyclical,"Tapestry, Inc."
+TRGP,Energy,Targa Resources Corp.
+TRIP,Consumer Cyclical,"Tripadvisor, Inc."
+TRMB,Technology,Trimble Inc.
+TROW,Financial Services,"T. Rowe Price Group, Inc."
+TRV,Financial Services,"The Travelers Companies, Inc."
+TSCO,Consumer Cyclical,Tractor Supply Company
+TSLA,Consumer Cyclical,"Tesla, Inc."
+TSN,Consumer Defensive,"Tyson Foods, Inc."
+TT,Industrials,Trane Technologies plc
+TTD,Communication Services,"The Trade Desk, Inc."
+TTWO,Communication Services,"Take-Two Interactive Software, Inc."
+TXN,Technology,Texas Instruments Incorporated
+TXT,Industrials,Textron Inc.
+TYL,Technology,"Tyler Technologies, Inc."
+UA,Consumer Cyclical,"Under Armour, Inc."
+UAA,Consumer Cyclical,"Under Armour, Inc."
+UAL,Industrials,"United Airlines Holdings, Inc."
+UBER,Technology,"Uber Technologies, Inc."
+UDR,Real Estate,"UDR, Inc."
+UHS,Healthcare,"Universal Health Services, Inc."
+ULTA,Consumer Cyclical,"Ulta Beauty, Inc."
+UNH,Healthcare,UnitedHealth Group Incorporated
+UNM,Financial Services,Unum Group
+UNP,Industrials,Union Pacific Corporation
+UPS,Industrials,"United Parcel Service, Inc."
+URBN,Consumer Cyclical,"Urban Outfitters, Inc."
+URI,Industrials,"United Rentals, Inc."
+USB,Financial Services,U.S. Bancorp
+V,Financial Services,Visa Inc.
+VEEV,Healthcare,Veeva Systems Inc.
+VFC,Consumer Cyclical,V.F. Corporation
+VICI,Real Estate,VICI Properties Inc.
+VLO,Energy,Valero Energy Corporation
+VLTO,Industrials,Veralto Corporation
+VMC,Basic Materials,Vulcan Materials Company
+VMRK,Real Estate,"AvalonBay Communities, Inc."
+VNO,Real Estate,Vornado Realty Trust
+VNT,Technology,Vontier Corporation
+VRSK,Industrials,"Verisk Analytics, Inc."
+VRSN,Technology,"VeriSign, Inc."
+VRT,Industrials,Vertiv Holdings Co
+VRTX,Healthcare,Vertex Pharmaceuticals Incorporated
+VST,Utilities,Vistra Corp.
+VTR,Real Estate,"Ventas, Inc."
+VTRS,Healthcare,Viatris Inc.
+VZ,Communication Services,Verizon Communications Inc.
+WAB,Industrials,Westinghouse Air Brake Technologies Corporation
+WAT,Healthcare,Waters Corporation
+WBD,Communication Services,"Warner Bros. Discovery, Inc."
+WDAY,Technology,"Workday, Inc."
+WDC,Technology,Western Digital Corporation
+WEC,Utilities,"WEC Energy Group, Inc."
+WELL,Real Estate,Welltower Inc.
+WFC,Financial Services,Wells Fargo & Company
+WHR,Consumer Cyclical,Whirlpool Corporation
+WM,Industrials,"Waste Management, Inc."
+WMB,Energy,"The Williams Companies, Inc."
+WMT,Consumer Defensive,Walmart Inc.
+WRB,Financial Services,W. R. Berkley Corporation
+WSM,Consumer Cyclical,"Williams-Sonoma, Inc."
+WST,Healthcare,"West Pharmaceutical Services, Inc."
+WTW,Financial Services,Willis Towers Watson Public Limited Company
+WU,Financial Services,The Western Union Company
+WY,Real Estate,Weyerhaeuser Company
+WYNN,Consumer Cyclical,"Wynn Resorts, Limited"
+XEL,Utilities,Xcel Energy Inc.
+XOM,Energy,ExxonMobil Holdings Corporation
+XRAY,Healthcare,DENTSPLY SIRONA Inc.
+XRX,Industrials,Xerox Holdings Corporation
+XYL,Industrials,Xylem Inc.
+XYZ,Technology,"Block, Inc."
+YUM,Consumer Cyclical,"Yum! Brands, Inc."
+ZBH,Healthcare,"Zimmer Biomet Holdings, Inc."
+ZBRA,Technology,Zebra Technologies Corporation
+ZION,Financial Services,"Zions Bancorporation, National Association"
+ZTS,Healthcare,Zoetis Inc.

@@ -16,13 +16,14 @@ from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
 from market_agent.data.cache import EarningsCache, PriceCache
+from market_agent.data.sources import Profile
 from market_agent.data.yahoo import YahooEarnings, YahooPrices, YahooSectors
 from market_agent.earnings import EarningsCalendar
 from market_agent.guard import GuardError, check_test_period
 from market_agent.panel import Panel
 from market_agent.settings import Settings, SettingsError, load_settings
 from market_agent.store import Store
-from market_agent.universe import Universe, load_sectors, write_sectors
+from market_agent.universe import Universe, load_profiles, load_sectors, write_profiles
 
 PERIODS = ("tuning", "test", "full")
 DEFAULT_CONFIG = Path("config.yaml")
@@ -136,28 +137,29 @@ def fetch(settings: Settings, store: Store) -> int:
 
 
 def build_sectors(settings: Settings, store: Store) -> int:
-    """Keeps a ticker's earlier sector when the new lookup fails or says "Unknown"."""
+    """Keeps a ticker's earlier sector and name when the new lookup fails or says "Unknown"."""
     source = sector_source()
     path = Path(settings.data.sectors_csv)
-    previous = load_sectors(path)
-    sectors = {}
+    previous = load_profiles(path)
+    profiles: dict[str, Profile] = {}
     failed = []
     for ticker in store.tickers_with_prices():
         if ticker == settings.data.benchmark:
             continue
         try:
-            sector = with_retries(ticker, lambda t=ticker: source.sector(t))
+            profile = with_retries(ticker, lambda t=ticker: source.profile(t))
         except Exception as exc:
-            log.warning("%s: sector lookup failed (%s)", ticker, exc)
+            log.warning("%s: profile lookup failed (%s)", ticker, exc)
             failed.append(ticker)
-            sector = None
-        if sector in (None, "Unknown") and ticker in previous:
-            sector = previous[ticker]
-        if sector is not None:
-            sectors[ticker] = sector
-    write_sectors(path, sectors)
-    unknown = sum(1 for s in sectors.values() if s == "Unknown")
-    print(f"Sectors written for {len(sectors)} tickers ({unknown} unknown)")
+            profile = None
+        old = previous.get(ticker)
+        if old is not None and (profile is None or profile.sector == "Unknown"):
+            profile = Profile(old.sector, (profile.name if profile else "") or old.name)
+        if profile is not None:
+            profiles[ticker] = profile
+    write_profiles(path, profiles)
+    unknown = sum(1 for p in profiles.values() if p.sector == "Unknown")
+    print(f"Sectors written for {len(profiles)} tickers ({unknown} unknown)")
     return report_failures(failed)
 
 

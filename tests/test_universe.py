@@ -1,6 +1,13 @@
 import pandas as pd
 
-from market_agent.universe import Universe, clean_ticker, load_sectors, write_sectors
+from market_agent.data.sources import Profile
+from market_agent.universe import (
+    Universe,
+    clean_ticker,
+    load_profiles,
+    load_sectors,
+    write_profiles,
+)
 
 CSV = """date,tickers
 2014-01-02,"AAPL,MSFT,TWTR"
@@ -40,8 +47,21 @@ def test_tickers_between_includes_every_snapshot_in_force(tmp_path):
     }
 
 
-def test_sectors_round_trip(tmp_path):
+def test_profiles_round_trip(tmp_path):
     path = tmp_path / "sectors.csv"
-    write_sectors(path, {"MSFT": "Technology", "JPM": "Financial Services"})
+    write_profiles(
+        path,
+        {
+            "MSFT": Profile("Technology", "Microsoft Corporation"),
+            "JPM": Profile("Financial Services", ""),
+        },
+    )
     assert load_sectors(path) == {"JPM": "Financial Services", "MSFT": "Technology"}
-    assert load_sectors(tmp_path / "none.csv") == {}
+    assert load_profiles(path)["MSFT"] == Profile("Technology", "Microsoft Corporation")
+    assert load_profiles(tmp_path / "none.csv") == {}
+
+
+def test_sector_file_without_names(tmp_path):
+    path = tmp_path / "sectors.csv"
+    path.write_text("ticker,sector\nAAPL,Technology\n", encoding="utf-8")
+    assert load_profiles(path) == {"AAPL": Profile("Technology", "")}

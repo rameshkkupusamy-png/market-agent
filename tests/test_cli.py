@@ -5,7 +5,7 @@ import pandas as pd
 
 from helpers import make_bars
 from market_agent import cli
-from market_agent.data.sources import EarningsHistory, NoData
+from market_agent.data.sources import EarningsHistory, NoData, Profile
 from market_agent.store import Store
 
 N = 320
@@ -35,8 +35,8 @@ class Earnings:
 
 
 class Sectors:
-    def sector(self, ticker):
-        return "Technology"
+    def profile(self, ticker):
+        return Profile("Technology", f"{ticker} Corp")
 
 
 def setup(tmp_path, monkeypatch):
@@ -236,13 +236,13 @@ def test_warns_after_test_runs_with_other_settings(tmp_path, monkeypatch, capsys
 
 
 class FlakySectors:
-    def sector(self, ticker):
+    def profile(self, ticker):
         raise ConnectionError("timed out")
 
 
 class UnknownSectors:
-    def sector(self, ticker):
-        return "Unknown"
+    def profile(self, ticker):
+        return Profile("Unknown", "")
 
 
 def test_build_sectors_keeps_known_sectors(tmp_path, monkeypatch, capsys):
@@ -250,6 +250,7 @@ def test_build_sectors_keeps_known_sectors(tmp_path, monkeypatch, capsys):
     cli.main(["fetch"])
     assert cli.main(["build-sectors"]) == 0
     csv = tmp_path / "data" / "sectors.csv"
+    assert "AAA,Technology,AAA Corp" in csv.read_text("utf-8")
     monkeypatch.setattr(cli, "sector_source", UnknownSectors)
     assert cli.main(["build-sectors"]) == 0
     assert "AAA,Technology" in csv.read_text("utf-8")

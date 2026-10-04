@@ -8,7 +8,13 @@ from typing import Any
 
 import pandas as pd
 
-from market_agent.data.sources import EarningsHistory, NoData, normalize_bars, to_day
+from market_agent.data.sources import (
+    EarningsHistory,
+    NoData,
+    Profile,
+    normalize_bars,
+    to_day,
+)
 
 log = logging.getLogger(__name__)
 
@@ -96,12 +102,13 @@ class YahooSectors:
     def __init__(self, client: Any = None):
         self._yf = _client(client)
 
-    def sector(self, ticker: str) -> str:
+    def profile(self, ticker: str) -> Profile:
         try:
             info = self._yf.Ticker(yahoo_symbol(ticker)).info or {}
         except Exception as exc:
             if not _no_data_error(exc):
                 raise
-            log.info("%s: no sector (%s)", ticker, exc)
-            return "Unknown"
-        return info.get("sector") or "Unknown"
+            log.info("%s: no profile (%s)", ticker, exc)
+            return Profile("Unknown", "")
+        name = info.get("longName") or info.get("shortName") or ""
+        return Profile(info.get("sector") or "Unknown", name)

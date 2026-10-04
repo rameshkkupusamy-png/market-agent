@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol
 
 import pandas as pd
@@ -30,6 +31,24 @@ class PriceSource(Protocol):
 
 class EarningsSource(Protocol):
     def fetch(self, ticker: str) -> EarningsHistory: ...
+
+
+@dataclass(frozen=True)
+class Headline:
+    published: pd.Timestamp  # tz-aware
+    source: str
+    headline: str
+    summary: str
+
+
+class NewsSource(Protocol):
+    def fetch(self, ticker: str, start: date, end: date) -> list[Headline]: ...
+
+
+@dataclass(frozen=True)
+class Profile:
+    sector: str
+    name: str = ""  # company name; empty when unknown
 
 
 def to_day(index: pd.Index) -> pd.DatetimeIndex:

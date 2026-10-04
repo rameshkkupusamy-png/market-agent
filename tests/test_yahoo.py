@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from yfinance.exceptions import YFEarningsDateMissing, YFRateLimitError
 
-from market_agent.data.sources import NoData
+from market_agent.data.sources import NoData, Profile
 from market_agent.data.yahoo import YahooEarnings, YahooPrices, YahooSectors, yahoo_symbol
 
 
@@ -130,13 +130,18 @@ def test_earnings_transport_errors_propagate(error):
         YahooEarnings(FakeYf({"AAPL": FakeTicker(error=error)})).fetch("AAPL")
 
 
-def test_sector():
-    yf = FakeYf({"AAPL": FakeTicker(info={"sector": "Technology"}), "X": FakeTicker(info={})})
-    assert YahooSectors(yf).sector("AAPL") == "Technology"
-    assert YahooSectors(yf).sector("X") == "Unknown"
+def test_profile():
+    yf = FakeYf(
+        {
+            "AAPL": FakeTicker(info={"sector": "Technology", "longName": "Apple Inc."}),
+            "X": FakeTicker(info={}),
+        }
+    )
+    assert YahooSectors(yf).profile("AAPL") == Profile("Technology", "Apple Inc.")
+    assert YahooSectors(yf).profile("X") == Profile("Unknown", "")
 
 
-def test_sector_transport_errors_propagate():
+def test_profile_transport_errors_propagate():
     yf = FakeYf({"AAPL": FakeTicker(error=YFRateLimitError())})
     with pytest.raises(YFRateLimitError):
-        YahooSectors(yf).sector("AAPL")
+        YahooSectors(yf).profile("AAPL")
