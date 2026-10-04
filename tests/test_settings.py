@@ -93,3 +93,23 @@ def test_defaults_have_their_declared_types():
     for section in (Settings().strategy, Settings().risk, Settings().data, Settings().backtest):
         for name, kind in get_type_hints(type(section)).items():
             assert type(getattr(section, name)) is kind, name
+
+
+def test_paper_and_ai_defaults_and_overrides(tmp_path):
+    s = Settings()
+    assert (s.paper.retry_hours, s.paper.max_missing_share, s.paper.delisted_after_days) == (
+        2.0,
+        0.05,
+        5,
+    )
+    assert (s.ai.model, s.ai.effort, s.ai.monthly_cap) == ("claude-opus-5-5", "low", 5.0)
+    path = tmp_path / "config.yaml"
+    path.write_text("ai:\n  model: claude-sonnet-5-5\n  input_price: 2\n", encoding="utf-8")
+    loaded = load_settings(path)
+    assert loaded.ai.model == "claude-sonnet-5-5"
+    assert loaded.ai.input_price == 2.0
+
+
+def test_ai_and_paper_settings_do_not_change_the_fingerprint():
+    changed = settings_with(ai={"model": "claude-haiku-4-5"}, paper={"retry_hours": 1.0})
+    assert changed.fingerprint() == Settings().fingerprint()

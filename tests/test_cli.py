@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 import pandas as pd
@@ -257,3 +258,11 @@ def test_build_sectors_keeps_known_sectors(tmp_path, monkeypatch, capsys):
     assert cli.main(["build-sectors"]) == 1
     assert "AAA,Technology" in csv.read_text("utf-8")
     assert "Failed: 1 ticker (AAA)" in capsys.readouterr().err
+
+
+def test_env_file_in_the_working_folder_is_loaded(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    monkeypatch.setattr(os, "environ", dict(os.environ))  # restored after the test
+    (tmp_path / ".env").write_text("MARKET_AGENT_TEST=yes\n", encoding="utf-8")
+    cli.main(["backtest"])  # fails (no data), but loads .env first
+    assert os.environ["MARKET_AGENT_TEST"] == "yes"

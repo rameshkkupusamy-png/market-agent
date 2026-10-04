@@ -11,3 +11,6 @@ backtest:
   start: 2015-01-01
   tuning_end: 2021-12-31
   test_start: 2022-01-01
+ai:
+  model: claude-opus-5-5   # claude-sonnet-5-5 costs half: also set input_price 2, output_price 10
+  monthly_cap: 5

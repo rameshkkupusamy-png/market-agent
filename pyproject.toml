@@ -7,7 +7,15 @@ name = "market-agent"
 version = "0.1.0"
 description = "Swing-trading analyst and paper trader"
 requires-python = ">=3.12"
-dependencies = ["pandas>=2.2", "numpy>=1.26", "yfinance>=0.2.40", "PyYAML>=6.0"]
+dependencies = [
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "yfinance>=0.2.40",
+    "PyYAML>=6.0",
+    "anthropic>=1.11",
+    "exchange_calendars>=4.13",
+    "python-dotenv>=1.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]

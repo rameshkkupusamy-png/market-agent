@@ -64,11 +64,34 @@ class BacktestSettings:
 
 
 @dataclass(frozen=True)
+class PaperSettings:
+    retry_hours: float = 2.0  # how long run-daily waits for the latest day's data
+    retry_every_minutes: float = 15.0
+    max_missing_share: float = 0.05  # more eligible tickers failing than this: no trading
+    delisted_after_days: int = 5  # sessions without a price before a held share is closed
+
+
+@dataclass(frozen=True)
+class AiSettings:
+    model: str = "claude-opus-5-5"
+    effort: str = "low"  # "" leaves it out (Claude Haiku 4.5 rejects it)
+    max_tokens: int = 4000
+    monthly_cap: float = 5.0  # US$
+    input_price: float = 4.0  # US$ per million input tokens (claude-opus-5-5)
+    output_price: float = 20.0  # US$ per million output tokens
+    max_headlines: int = 15
+    news_days: int = 7
+    max_reviews_per_day: int = 6  # top-ranked candidates reviewed; the rest count as approved
+
+
+@dataclass(frozen=True)
 class Settings:
     strategy: StrategySettings = field(default_factory=StrategySettings)
     risk: RiskSettings = field(default_factory=RiskSettings)
     data: DataSettings = field(default_factory=DataSettings)
     backtest: BacktestSettings = field(default_factory=BacktestSettings)
+    paper: PaperSettings = field(default_factory=PaperSettings)
+    ai: AiSettings = field(default_factory=AiSettings)
 
     def fingerprint(self) -> str:
         """Identifies the trading rules: changes when any strategy or risk number changes."""
@@ -85,6 +108,8 @@ SECTIONS = {
     "risk": RiskSettings,
     "data": DataSettings,
     "backtest": BacktestSettings,
+    "paper": PaperSettings,
+    "ai": AiSettings,
 }
 
 

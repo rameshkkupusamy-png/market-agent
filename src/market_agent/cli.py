@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
 from market_agent.data.cache import EarningsCache, PriceCache
@@ -59,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     backtest.add_argument("--period", choices=PERIODS, default="tuning")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
+    load_dotenv(Path(".env"))  # the working folder only, so tests never pick up real keys
 
     try:
         settings = load_settings(args.config or DEFAULT_CONFIG, required=args.config is not None)
