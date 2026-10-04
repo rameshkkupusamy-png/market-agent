@@ -162,7 +162,9 @@ print("close 2026-11-27:", cal.session_close(pd.Timestamp("2026-11-27")))
 # 3. Telegram
 token, chat = os.environ["TELEGRAM_BOT_TOKEN"], os.environ["TELEGRAM_CHAT_ID"]
 data = urllib.parse.urlencode({"chat_id": chat, "text": "Market agent: test message"}).encode()
-with urllib.request.urlopen(f"https://api.telegram.org/bot{token}/sendMessage", data, timeout=30) as r:
+with urllib.request.urlopen(
+    f"https://api.telegram.org/bot{token}/sendMessage", data, timeout=30
+) as r:
     print("telegram ok:", json.load(r)["ok"])
 
 # 4. Claude: one review-sized structured request
@@ -182,8 +184,11 @@ response = anthropic.Anthropic().beta.messages.create(
     messages=[{"role": "user", "content": "A stock broke out on 1.8x volume, no news. Verdict?"}],
 )
 print(
-    "claude", response.model, response.stop_reason,
-    response.usage.input_tokens, response.usage.output_tokens,
+    "claude",
+    response.model,
+    response.stop_reason,
+    response.usage.input_tokens,
+    response.usage.output_tokens,
     [(b.type, getattr(b, "text", "")[:60]) for b in response.content],
 )
 ```
@@ -733,88 +738,96 @@ CREATE TABLE IF NOT EXISTS reviews (
 and add (`Mapping` from `collections.abc`):
 
 ```python
-    # paper trading
-    def save_day(
-        self,
-        day: pd.Timestamp,
-        states: Mapping[str, str],
-        status: str,
-        report: str,
-        alerts: list[str],
-    ) -> None:
-        """Both portfolios and the day's run record, in one transaction."""
-        with self._conn:
-            self._conn.executemany(
-                "INSERT OR REPLACE INTO paper_states VALUES (?, ?, ?)",
-                [(name, _day(day), state) for name, state in states.items()],
-            )
-            self._conn.execute(
-                "INSERT OR REPLACE INTO daily_runs VALUES (?, ?, ?, ?, ?, 0)",
-                (
-                    _day(day),
-                    datetime.now().isoformat(timespec="seconds"),
-                    status,
-                    report,
-                    json.dumps(alerts),
-                ),
-            )
-
-    def _paper_day(self, sql: str) -> pd.Timestamp | None:
-        value = self._conn.execute(sql).fetchone()[0]
-        return pd.Timestamp(value) if value else None
-
-    def latest_paper_day(self) -> pd.Timestamp | None:
-        return self._paper_day("SELECT MAX(day) FROM paper_states")
-
-    def first_paper_day(self) -> pd.Timestamp | None:
-        return self._paper_day("SELECT MIN(day) FROM paper_states")
-
-    def paper_states(self, day: pd.Timestamp) -> dict[str, str]:
-        rows = self._conn.execute(
-            "SELECT portfolio, state FROM paper_states WHERE day = ?", (_day(day),)
+# paper trading
+def save_day(
+    self,
+    day: pd.Timestamp,
+    states: Mapping[str, str],
+    status: str,
+    report: str,
+    alerts: list[str],
+) -> None:
+    """Both portfolios and the day's run record, in one transaction."""
+    with self._conn:
+        self._conn.executemany(
+            "INSERT OR REPLACE INTO paper_states VALUES (?, ?, ?)",
+            [(name, _day(day), state) for name, state in states.items()],
         )
-        return dict(rows.fetchall())
-
-    def replace_paper_state(self, portfolio: str, day: pd.Timestamp, state: str) -> None:
-        with self._conn:
-            self._conn.execute(
-                "UPDATE paper_states SET state = ? WHERE portfolio = ? AND day = ?",
-                (state, portfolio, _day(day)),
-            )
-
-    def _run(self, row: tuple | None) -> dict[str, Any] | None:
-        if row is None:
-            return None
-        day, created_at, status, report, alerts, sent = row
-        return {
-            "day": pd.Timestamp(day),
-            "created_at": created_at,
-            "status": status,
-            "report": report,
-            "alerts": json.loads(alerts),
-            "sent": bool(sent),
-        }
-
-    def daily_run(self, day: pd.Timestamp) -> dict[str, Any] | None:
-        return self._run(
-            self._conn.execute(
-                "SELECT day, created_at, status, report, alerts, sent FROM daily_runs "
-                "WHERE day = ?",
-                (_day(day),),
-            ).fetchone()
+        self._conn.execute(
+            "INSERT OR REPLACE INTO daily_runs VALUES (?, ?, ?, ?, ?, 0)",
+            (
+                _day(day),
+                datetime.now().isoformat(timespec="seconds"),
+                status,
+                report,
+                json.dumps(alerts),
+            ),
         )
 
-    def latest_daily_run(self) -> dict[str, Any] | None:
-        return self._run(
-            self._conn.execute(
-                "SELECT day, created_at, status, report, alerts, sent FROM daily_runs "
-                "ORDER BY day DESC LIMIT 1"
-            ).fetchone()
+
+def _paper_day(self, sql: str) -> pd.Timestamp | None:
+    value = self._conn.execute(sql).fetchone()[0]
+    return pd.Timestamp(value) if value else None
+
+
+def latest_paper_day(self) -> pd.Timestamp | None:
+    return self._paper_day("SELECT MAX(day) FROM paper_states")
+
+
+def first_paper_day(self) -> pd.Timestamp | None:
+    return self._paper_day("SELECT MIN(day) FROM paper_states")
+
+
+def paper_states(self, day: pd.Timestamp) -> dict[str, str]:
+    rows = self._conn.execute(
+        "SELECT portfolio, state FROM paper_states WHERE day = ?", (_day(day),)
+    )
+    return dict(rows.fetchall())
+
+
+def replace_paper_state(self, portfolio: str, day: pd.Timestamp, state: str) -> None:
+    with self._conn:
+        self._conn.execute(
+            "UPDATE paper_states SET state = ? WHERE portfolio = ? AND day = ?",
+            (state, portfolio, _day(day)),
         )
 
-    def mark_sent(self, day: pd.Timestamp) -> None:
-        with self._conn:
-            self._conn.execute("UPDATE daily_runs SET sent = 1 WHERE day = ?", (_day(day),))
+
+def _run(self, row: tuple | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    day, created_at, status, report, alerts, sent = row
+    return {
+        "day": pd.Timestamp(day),
+        "created_at": created_at,
+        "status": status,
+        "report": report,
+        "alerts": json.loads(alerts),
+        "sent": bool(sent),
+    }
+
+
+def daily_run(self, day: pd.Timestamp) -> dict[str, Any] | None:
+    return self._run(
+        self._conn.execute(
+            "SELECT day, created_at, status, report, alerts, sent FROM daily_runs WHERE day = ?",
+            (_day(day),),
+        ).fetchone()
+    )
+
+
+def latest_daily_run(self) -> dict[str, Any] | None:
+    return self._run(
+        self._conn.execute(
+            "SELECT day, created_at, status, report, alerts, sent FROM daily_runs "
+            "ORDER BY day DESC LIMIT 1"
+        ).fetchone()
+    )
+
+
+def mark_sent(self, day: pd.Timestamp) -> None:
+    with self._conn:
+        self._conn.execute("UPDATE daily_runs SET sent = 1 WHERE day = ?", (_day(day),))
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -1110,7 +1123,9 @@ def restate(portfolio: Portfolio, bar: BarLookup) -> list[str]:
         pos.target *= factor
         pos.last_close *= factor
         pos.shares /= factor
-        notes.append(f"{ticker}: prices restated ×{factor:.4f} (split or dividend); position adjusted")
+        notes.append(
+            f"{ticker}: prices restated ×{factor:.4f} (split or dividend); position adjusted"
+        )
     orders = []
     for order in portfolio.orders:
         b = bar(order.ticker, order.created) if order.side == "buy" else None
@@ -1355,8 +1370,13 @@ def test_finnhub_news_becomes_headlines_newest_first():
     def get_json(url):
         urls.append(url)
         return [
-            {"datetime": 1759329000, "source": "Reuters", "headline": " Nvidia wins order ",
-             "summary": "A large cloud order.", "url": "https://example.com/a"},
+            {
+                "datetime": 1759329000,
+                "source": "Reuters",
+                "headline": " Nvidia wins order ",
+                "summary": "A large cloud order.",
+                "url": "https://example.com/a",
+            },
             {"datetime": 1759415400, "source": "CNBC", "headline": "Later story", "summary": ""},
             {"datetime": 1759415500, "source": "X", "headline": "", "summary": "no headline"},
         ]
@@ -1723,7 +1743,10 @@ from market_agent.settings import AiSettings
 
 AI = AiSettings()
 HEADLINE = Headline(
-    pd.Timestamp("2026-10-01 14:30", tz="UTC"), "Reuters", "Nvidia wins order", "A large cloud order."
+    pd.Timestamp("2026-10-01 14:30", tz="UTC"),
+    "Reuters",
+    "Nvidia wins order",
+    "A large cloud order.",
 )
 ITEM = ReviewInput(
     ticker="NVDA",
@@ -1740,8 +1763,13 @@ ITEM = ReviewInput(
     headlines=[HEADLINE],
 )
 VALID = json.dumps(
-    {"verdict": "skip", "confidence": "medium", "reasons": ["Guidance cut"], "risks": [],
-     "news_used": [0]}
+    {
+        "verdict": "skip",
+        "confidence": "medium",
+        "reasons": ["Guidance cut"],
+        "risks": [],
+        "news_used": [0],
+    }
 )
 
 
@@ -1808,8 +1836,13 @@ def test_invalid_twice_is_flagged():
     "answer",
     [
         {"verdict": "buy", "confidence": "high", "reasons": [], "risks": [], "news_used": []},
-        {"verdict": "skip", "confidence": "high", "reasons": ["a", "b", "c", "d"], "risks": [],
-         "news_used": []},
+        {
+            "verdict": "skip",
+            "confidence": "high",
+            "reasons": ["a", "b", "c", "d"],
+            "risks": [],
+            "news_used": [],
+        },
         {"verdict": "skip", "confidence": "high", "reasons": [], "risks": [], "news_used": [3]},
     ],
 )
@@ -1867,7 +1900,11 @@ def test_claude_model_asks_for_json_with_fallbacks():
     answer = ClaudeModel(AI, fake_client(messages)).ask("system", "prompt")
     assert answer == Answer(VALID, 1200, 300, "claude-opus-5-5")
     [call] = messages.calls
-    assert (call["model"], call["max_tokens"], call["system"]) == ("claude-opus-5-5", 4000, "system")
+    assert (call["model"], call["max_tokens"], call["system"]) == (
+        "claude-opus-5-5",
+        4000,
+        "system",
+    )
     assert call["messages"] == [{"role": "user", "content": "prompt"}]
     assert call["output_config"] == {
         "effort": "low",
@@ -1879,7 +1916,9 @@ def test_claude_model_asks_for_json_with_fallbacks():
 
 def test_claude_model_without_fallbacks_or_effort():
     messages = FakeMessages(RESPONSE)
-    ClaudeModel(AiSettings(model="claude-haiku-4-5", effort=""), fake_client(messages)).ask("s", "p")
+    ClaudeModel(AiSettings(model="claude-haiku-4-5", effort=""), fake_client(messages)).ask(
+        "s", "p"
+    )
     [call] = messages.calls
     assert "betas" not in call and "fallbacks" not in call
     assert call["output_config"] == {"format": {"type": "json_schema", "schema": SCHEMA}}
@@ -1902,9 +1941,18 @@ imported):
 def test_reviews_and_monthly_spend(store):
     day = pd.Timestamp("2026-10-02")
     review = SimpleNamespace(
-        ticker="NVDA", status="reviewed", verdict="skip", confidence="medium",
-        reasons=["Guidance cut"], risks=[], news_used=[0], note="", cost=0.04,
-        model="claude-opus-5-5", prompt="p", answer="{}",
+        ticker="NVDA",
+        status="reviewed",
+        verdict="skip",
+        confidence="medium",
+        reasons=["Guidance cut"],
+        risks=[],
+        news_used=[0],
+        note="",
+        cost=0.04,
+        model="claude-opus-5-5",
+        prompt="p",
+        answer="{}",
     )
     store.save_review(day, review, late=True)
     store.save_review(day, review, late=False)
@@ -2138,9 +2186,7 @@ def parse_answer(text: str, headline_count: int) -> dict[str, Any] | None:
 
 
 class Reviewer:
-    def __init__(
-        self, model: Model | None, settings: AiSettings, spent: Callable[[], float]
-    ):
+    def __init__(self, model: Model | None, settings: AiSettings, spent: Callable[[], float]):
         """spent: US$ already spent on reviews this calendar month."""
         self._model = model
         self._settings = settings
@@ -2151,8 +2197,9 @@ class Reviewer:
         return (answer.input_tokens * s.input_price + answer.output_tokens * s.output_price) / 1e6
 
     def _not_reviewed(self, item: ReviewInput, prompt: str, note: str, cost: float = 0.0) -> Review:
-        return Review(item.ticker, "not reviewed", "approve", None, [], [], [], note, cost, None,
-                      prompt, None)
+        return Review(
+            item.ticker, "not reviewed", "approve", None, [], [], [], note, cost, None, prompt, None
+        )
 
     def review(self, item: ReviewInput) -> Review:
         prompt = build_prompt(item)
@@ -2171,65 +2218,98 @@ class Reviewer:
             cost += self._cost(answer)
             parsed = parse_answer(answer.text, len(item.headlines))
             if parsed is not None:
-                return Review(item.ticker, "reviewed", note="", cost=cost, model=answer.model,
-                              prompt=prompt, answer=answer.text, **parsed)
+                return Review(
+                    item.ticker,
+                    "reviewed",
+                    note="",
+                    cost=cost,
+                    model=answer.model,
+                    prompt=prompt,
+                    answer=answer.text,
+                    **parsed,
+                )
         assert answer is not None
-        return Review(item.ticker, "failed", "flag", None, [], [], [], "review failed", cost,
-                      answer.model, prompt, answer.text)
+        return Review(
+            item.ticker,
+            "failed",
+            "flag",
+            None,
+            [],
+            [],
+            [],
+            "review failed",
+            cost,
+            answer.model,
+            prompt,
+            answer.text,
+        )
 ```
 
 `store.py` (`datetime` is already imported):
 
 ```python
-    # AI reviews
-    def save_review(self, day: pd.Timestamp, review: Any, late: bool) -> None:
-        with self._conn:
-            self._conn.execute(
-                "INSERT INTO reviews (created_at, day, ticker, status, verdict, confidence, "
-                "reasons, risks, news_used, note, late, model, prompt, answer, cost) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    datetime.now().isoformat(timespec="seconds"),
-                    _day(day),
-                    review.ticker,
-                    review.status,
-                    review.verdict,
-                    review.confidence,
-                    json.dumps(review.reasons),
-                    json.dumps(review.risks),
-                    json.dumps(review.news_used),
-                    review.note,
-                    int(late),
-                    review.model,
-                    review.prompt,
-                    review.answer,
-                    review.cost,
-                ),
-            )
+# AI reviews
+def save_review(self, day: pd.Timestamp, review: Any, late: bool) -> None:
+    with self._conn:
+        self._conn.execute(
+            "INSERT INTO reviews (created_at, day, ticker, status, verdict, confidence, "
+            "reasons, risks, news_used, note, late, model, prompt, answer, cost) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                datetime.now().isoformat(timespec="seconds"),
+                _day(day),
+                review.ticker,
+                review.status,
+                review.verdict,
+                review.confidence,
+                json.dumps(review.reasons),
+                json.dumps(review.risks),
+                json.dumps(review.news_used),
+                review.note,
+                int(late),
+                review.model,
+                review.prompt,
+                review.answer,
+                review.cost,
+            ),
+        )
 
-    def ai_spent_since(self, since: datetime) -> float:
-        row = self._conn.execute(
-            "SELECT COALESCE(SUM(cost), 0) FROM reviews WHERE created_at >= ?",
-            (since.isoformat(timespec="seconds"),),
-        ).fetchone()
-        return float(row[0])
 
-    def reviews_on(self, day: pd.Timestamp) -> list[dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT ticker, status, verdict, confidence, reasons, risks, news_used, note, late, "
-            "model, cost FROM reviews WHERE day = ? ORDER BY id",
-            (_day(day),),
-        ).fetchall()
-        keys = ("ticker", "status", "verdict", "confidence", "reasons", "risks", "news_used",
-                "note", "late", "model", "cost")
-        result = []
-        for row in rows:
-            record = dict(zip(keys, row, strict=True))
-            for key in ("reasons", "risks", "news_used"):
-                record[key] = json.loads(record[key])
-            record["late"] = bool(record["late"])
-            result.append(record)
-        return result
+def ai_spent_since(self, since: datetime) -> float:
+    row = self._conn.execute(
+        "SELECT COALESCE(SUM(cost), 0) FROM reviews WHERE created_at >= ?",
+        (since.isoformat(timespec="seconds"),),
+    ).fetchone()
+    return float(row[0])
+
+
+def reviews_on(self, day: pd.Timestamp) -> list[dict[str, Any]]:
+    rows = self._conn.execute(
+        "SELECT ticker, status, verdict, confidence, reasons, risks, news_used, note, late, "
+        "model, cost FROM reviews WHERE day = ? ORDER BY id",
+        (_day(day),),
+    ).fetchall()
+    keys = (
+        "ticker",
+        "status",
+        "verdict",
+        "confidence",
+        "reasons",
+        "risks",
+        "news_used",
+        "note",
+        "late",
+        "model",
+        "cost",
+    )
+    result = []
+    for row in rows:
+        record = dict(zip(keys, row, strict=True))
+        for key in ("reasons", "risks", "news_used"):
+            record[key] = json.loads(record[key])
+        record["late"] = bool(record["late"])
+        result.append(record)
+    return result
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -2283,8 +2363,9 @@ def candidate(ticker):
 
 
 def review(ticker, status, verdict, confidence=None, reasons=(), note=""):
-    return Review(ticker, status, verdict, confidence, list(reasons), [], [], note, 0.0, None,
-                  "", None)
+    return Review(
+        ticker, status, verdict, confidence, list(reasons), [], [], note, 0.0, None, "", None
+    )
 
 
 def test_report_text():
@@ -2697,8 +2778,20 @@ class FakeReviewer:
 
     def review(self, item):
         self.items.append(item)
-        return Review(item.ticker, "reviewed", self.verdict, "high", ["fine"], [], [], "", 0.01,
-                      "fake", "prompt", "{}")
+        return Review(
+            item.ticker,
+            "reviewed",
+            self.verdict,
+            "high",
+            ["fine"],
+            [],
+            [],
+            "",
+            0.01,
+            "fake",
+            "prompt",
+            "{}",
+        )
 
 
 @dataclass
@@ -3001,9 +3094,7 @@ class DailyRun:
         cash = self.settings.risk.starting_cash
         return {name: portfolio_to_json(Portfolio(name, cash)) for name in PORTFOLIOS}
 
-    def process(
-        self, market: Market, day: pd.Timestamp, check: DayCheck, late: bool
-    ) -> DayResult:
+    def process(self, market: Market, day: pd.Timestamp, check: DayCheck, late: bool) -> DayResult:
         s = self.settings
         states = self._previous_states()
         if not check.ok:
@@ -3023,7 +3114,10 @@ class DailyRun:
                 + ", ".join(check.excluded)
             )
         candidates = screen(
-            day, market.panel.snapshot(day), market.universe.members(day), market.earnings,
+            day,
+            market.panel.snapshot(day),
+            market.universe.members(day),
+            market.earnings,
             s.strategy,
         )
         reviews = self._review(market, day, candidates[: s.ai.max_reviews_per_day], late, warnings)
@@ -3120,9 +3214,7 @@ class DailyRun:
         return reviews
 
 
-def pending_days(
-    store: Store, calendar: TradingCalendar, now: pd.Timestamp
-) -> list[pd.Timestamp]:
+def pending_days(store: Store, calendar: TradingCalendar, now: pd.Timestamp) -> list[pd.Timestamp]:
     """Closed sessions not processed yet. The very first run starts with the latest one."""
     latest = calendar.latest_closed(now)
     if latest is None:
@@ -3154,15 +3246,19 @@ def run_days(
         latest = day == days[-1]
         check = check_market(market, settings, day)
         while not check.ok and latest and wait and now() < deadline:
-            print(f"Data for {day:%Y-%m-%d} is incomplete ({check.reason}); "
-                  f"trying again in {every:g} minutes")
+            print(
+                f"Data for {day:%Y-%m-%d} is incomplete ({check.reason}); "
+                f"trying again in {every:g} minutes"
+            )
             sleep(every * 60)
             refetch([*check.excluded, settings.data.benchmark])
             market = load_market(store, settings, calendar.up_to(days[-1]))
             check = check_market(market, settings, day)
         if not check.ok and latest and not wait:
-            print(f"Data for {day:%Y-%m-%d} is not complete yet ({check.reason}); "
-                  "the next run will process it.")
+            print(
+                f"Data for {day:%Y-%m-%d} is not complete yet ({check.reason}); "
+                "the next run will process it."
+            )
             break
         results.append(runner.process(market, day, check, late=not latest))
     return results
@@ -3175,8 +3271,11 @@ def send_results(store: Store, results: list[DayResult], telegram: Any) -> list[
     if len(results) > SUMMARY_AFTER:
         missed = ", ".join(f"{r.day:%Y-%m-%d}" for r in results[:-1])
         messages.append(
-            (None, f"Caught up {len(results) - 1} missed trading days ({missed}). Their "
-                   "reports are saved: `agent report --day YYYY-MM-DD`.")
+            (
+                None,
+                f"Caught up {len(results) - 1} missed trading days ({missed}). Their "
+                "reports are saved: `agent report --day YYYY-MM-DD`.",
+            )
         )
         shown = results[-1:]
     messages += [(r.day, r.report) for r in shown]
@@ -3416,7 +3515,9 @@ def refetch(settings: Settings, store: Store, tickers: list[str]) -> None:
     prices = PriceCache(store, price_source())
     for ticker in tickers:
         try:
-            with_retries(ticker, lambda t=ticker: prices.update(t, settings.data.history_start, True))
+            with_retries(
+                ticker, lambda t=ticker: prices.update(t, settings.data.history_start, True)
+            )
         except Exception as exc:
             log.warning("%s: download failed again (%s)", ticker, exc)
 
