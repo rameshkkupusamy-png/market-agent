@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 
 import numpy as np
@@ -263,3 +263,32 @@ def test_paper_days_and_daily_runs(store):
     assert store.paper_states(d2)["rules-only"] == "{5}"
     assert store.daily_run(pd.Timestamp("2026-09-30")) is None
     assert store.paper_states(pd.Timestamp("2026-09-30")) == {}
+
+
+def test_reviews_and_monthly_spend(store):
+    day = pd.Timestamp("2026-10-02")
+    review = SimpleNamespace(
+        ticker="NVDA",
+        status="reviewed",
+        verdict="skip",
+        confidence="medium",
+        reasons=["Guidance cut"],
+        risks=[],
+        news_used=[0],
+        note="",
+        cost=0.04,
+        model="claude-opus-5-5",
+        prompt="p",
+        answer="{}",
+    )
+    store.save_review(day, review, late=True)
+    store.save_review(day, review, late=False)
+    assert store.ai_spent_since(datetime(2000, 1, 1)) == pytest.approx(0.08)
+    assert store.ai_spent_since(datetime(2100, 1, 1)) == 0.0
+    [first, _] = store.reviews_on(day)
+    assert (first["ticker"], first["verdict"], first["reasons"], first["late"]) == (
+        "NVDA",
+        "skip",
+        ["Guidance cut"],
+        True,
+    )

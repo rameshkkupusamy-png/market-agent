@@ -320,3 +320,64 @@ class Store:
     def mark_sent(self, day: pd.Timestamp) -> None:
         with self._conn:
             self._conn.execute("UPDATE daily_runs SET sent = 1 WHERE day = ?", (_day(day),))
+
+    # AI reviews
+    def save_review(self, day: pd.Timestamp, review: Any, late: bool) -> None:
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO reviews (created_at, day, ticker, status, verdict, confidence, "
+                "reasons, risks, news_used, note, late, model, prompt, answer, cost) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    datetime.now().isoformat(timespec="seconds"),
+                    _day(day),
+                    review.ticker,
+                    review.status,
+                    review.verdict,
+                    review.confidence,
+                    json.dumps(review.reasons),
+                    json.dumps(review.risks),
+                    json.dumps(review.news_used),
+                    review.note,
+                    int(late),
+                    review.model,
+                    review.prompt,
+                    review.answer,
+                    review.cost,
+                ),
+            )
+
+    def ai_spent_since(self, since: datetime) -> float:
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(cost), 0) FROM reviews WHERE created_at >= ?",
+            (since.isoformat(timespec="seconds"),),
+        ).fetchone()
+        return float(row[0])
+
+    def reviews_on(self, day: pd.Timestamp) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT ticker, status, verdict, confidence, reasons, risks, news_used, note, late, "
+            "model, cost FROM reviews WHERE day = ? ORDER BY id",
+            (_day(day),),
+        ).fetchall()
+        keys = (
+            "ticker",
+            "status",
+            "verdict",
+            "confidence",
+            "reasons",
+            "risks",
+            "news_used",
+            "note",
+            "late",
+            "model",
+            "cost",
+        )
+        result = []
+        for row in rows:
+            record = dict(zip(keys, row, strict=True))
+            for key in ("reasons", "risks", "news_used"):
+                record[key] = json.loads(record[key])
+            record["late"] = bool(record["late"])
+            result.append(record)
+        return result
