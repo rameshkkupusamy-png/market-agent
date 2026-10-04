@@ -276,3 +276,52 @@ def test_an_unsettled_latest_session_leaves_the_previous_one(tmp_path):
     run(w, after_close(249))
     results = run(w, closing(SESSIONS[251]) + pd.Timedelta(minutes=30))
     assert [r.day for r in results] == [SESSIONS[250]]
+
+
+def late_split_world(path, split_at=None):
+    """AAA held from session 251; from `split_at` on its bars are on a 4:1 post-split scale
+    while the older history is still unadjusted (Yahoo has not restated it yet)."""
+    from dataclasses import replace
+
+    w = make_world(path)
+    w.settings = replace(w.settings, paper=replace(w.settings.paper, max_missing_share=1.0))
+    w.runner.settings = w.settings
+    for k in range(250, 256):
+        run(w, after_close(k))
+    assert "AAA" in state(w, SESSIONS[255]).positions
+    if split_at is not None:
+        bars = aaa_bars()
+        bars.iloc[split_at:, :4] = bars.iloc[split_at:, :4] / 4
+        w.store.replace_prices("AAA", bars, "2026-10-02")
+    return w
+
+
+def test_late_split_holds_the_position_on_the_first_shown_day(tmp_path):
+    w = late_split_world(tmp_path, split_at=256)
+    [dropped] = run(w, after_close(256))  # the panel drops the jump day itself
+    pos = state(w, SESSIONS[256]).positions["AAA"]
+    assert (pos.last_close, pos.marked_on) == (78.0, SESSIONS[255])
+    assert "left out today: AAA" in dropped.report
+    [shown] = run(w, after_close(257))  # first day the panel shows a post-split bar
+    for name in ("rules-only", "rules+ai"):
+        p = state(w, SESSIONS[257], name)
+        assert p.trades == []
+        assert (p.positions["AAA"].last_close, p.positions["AAA"].marked_on) == (
+            78.0,
+            SESSIONS[255],
+        )
+        assert (
+            f"{name}: AAA: price moved -75% with no split record; position held unchanged today"
+            in shown.report
+        )
+    run(w, after_close(258))  # no restatement came: the move is accepted
+    [trade] = state(w, SESSIONS[258]).trades
+    assert (trade.ticker, trade.exit_day, trade.exit_reason) == ("AAA", SESSIONS[258], "stop (gap)")
+
+
+def test_normal_moves_of_a_held_position_are_not_held_back(tmp_path):
+    w = late_split_world(tmp_path)
+    [result] = run(w, after_close(256))
+    pos = state(w, SESSIONS[256]).positions["AAA"]
+    assert pos.marked_on == SESSIONS[256] and pos.last_close == aaa_bars()["close"].iloc[256]
+    assert "no split record" not in result.report

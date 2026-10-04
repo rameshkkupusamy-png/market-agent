@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
+from typing import Any
 
 import pandas as pd
 
 from market_agent.broker import BarLookup
-from market_agent.panel import Panel
+from market_agent.panel import Bar, Panel
 from market_agent.portfolio import Portfolio, portfolio_from_json, portfolio_to_json
 from market_agent.store import Store
 
@@ -70,6 +71,44 @@ def restate(portfolio: Portfolio, bar: BarLookup, slippage: float) -> list[str]:
         orders.append(order)
     portfolio.orders = orders
     return notes
+
+
+def unexplained_jumps(
+    portfolio: Portfolio,
+    panel: Panel,
+    day: pd.Timestamp,
+    previous: pd.Timestamp,
+    max_jump: float,
+) -> dict[str, float]:
+    """Held tickers whose first shown bar since they were last marked opens more than
+    max_jump away from the last close: likely a split Yahoo has not restated yet.
+
+    Returns each one's move. Only the first shown bar counts; later bars are used as usual.
+    """
+    jumps = {}
+    for ticker, pos in portfolio.positions.items():
+        b = panel.bar(ticker, day)
+        if b is None or pos.last_close <= 0 or pos.marked_on is None:
+            continue
+        move = b.open / pos.last_close - 1
+        if abs(move) > max_jump and panel.last_bar_until(ticker, previous) == pos.marked_on:
+            jumps[ticker] = move
+    return jumps
+
+
+class HiddenBars:
+    """A panel whose bars for the given tickers on one day are hidden (no price that day)."""
+
+    def __init__(self, panel: Panel, day: pd.Timestamp, tickers: Iterable[str]):
+        self._panel, self._day, self._tickers = panel, day, set(tickers)
+
+    def bar(self, ticker: str, day: pd.Timestamp) -> Bar | None:
+        if day == self._day and ticker in self._tickers:
+            return None
+        return self._panel.bar(ticker, day)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._panel, name)
 
 
 def gone_lookup(

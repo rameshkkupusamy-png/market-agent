@@ -15,7 +15,13 @@ from market_agent.data.sources import NewsSource, Profile
 from market_agent.earnings import EarningsCalendar
 from market_agent.notify import TelegramError
 from market_agent.panel import Panel
-from market_agent.paper import PORTFOLIOS, gone_lookup, restate
+from market_agent.paper import (
+    PORTFOLIOS,
+    HiddenBars,
+    gone_lookup,
+    restate,
+    unexplained_jumps,
+)
 from market_agent.portfolio import Portfolio, portfolio_from_json, portfolio_to_json
 from market_agent.report import PortfolioLine, build_report, fills_on
 from market_agent.reviewer import Review, ReviewInput
@@ -145,11 +151,22 @@ class DailyRun:
         for name, portfolio in portfolios.items():
             notes = restate(portfolio, market.panel.bar, s.risk.slippage)
             warnings += [f"{name}: {note}" for note in notes]
+            jumps = (
+                unexplained_jumps(portfolio, market.panel, day, sessions[-2], s.data.max_daily_jump)
+                if len(sessions) > 1
+                else {}
+            )
+            warnings += [
+                f"{name}: {ticker}: price moved {move:+.0%} with no split record; "
+                "position held unchanged today"
+                for ticker, move in jumps.items()
+            ]
+            panel = HiddenBars(market.panel, day, jumps) if jumps else market.panel
             was_halted = portfolio.halted
             taken = candidates
             if name == "rules+ai":
                 taken = [c for c in candidates if self._verdict(reviews, c) != "skip"]
-            trade_day(sim, portfolio, day, market.panel, last_day, taken, sectors, s)
+            trade_day(sim, portfolio, day, panel, last_day, taken, sectors, s)
             fills += fills_on(portfolio, day)
             if portfolio.halted and not was_halted:
                 alerts.append(
