@@ -16,7 +16,7 @@ ATVI returned empty data (no exception raised; yfinance only logged errors). In 
 tickers that were later reused by another company (e.g. AAL, AAP, ALK) return data for the new
 company, so "has data" does not guarantee it is the old member; survivorship bias is measurable,
 not fixable. The ticker `AFS.A` (dot-class share) is mapped to a dash in the check.
-News source for plan 2: not checked here.
+News, the trading calendar, Telegram and Claude for plan 2: see "Plan 2 sources" below.
 
 Update (2026-10-03): prices are now fetched with `history(auto_adjust=False)`. Yahoo's `Close`
 and `Volume` there are still adjusted for later splits (NVDA 2015-01-02: Close 0.503, i.e. the

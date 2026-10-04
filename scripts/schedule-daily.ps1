@@ -6,6 +6,6 @@ $repo = Split-Path -Parent $PSScriptRoot
 $command = "set PYTHONUTF8=1&& `"$repo\.venv\Scripts\agent.exe`" run-daily >> `"$repo\data\daily.log`" 2>&1"
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c $command" -WorkingDirectory $repo
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday, Wednesday, Thursday, Friday, Saturday -At 06:30
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun -ExecutionTimeLimit (New-TimeSpan -Hours 4)
-Register-ScheduledTask -TaskName "Market agent daily run" -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 4)
+Register-ScheduledTask -TaskName "Market agent daily run" -Action $action -Trigger $trigger -Settings $settings -Force -ErrorAction Stop | Out-Null
 Write-Output "Registered 'Market agent daily run' (06:30 Tue-Sat). Log: $repo\data\daily.log"
