@@ -81,3 +81,12 @@ def test_panel_excludes_suspicious_days_and_knows_last_day():
     assert panel.last_day("SHORT") == short.index[-1]
     assert panel.bar("SHORT", a.index[25]) is None
     assert panel.last_day("NOPE") is None
+
+
+def test_last_bar_until():
+    sessions = pd.bdate_range("2024-01-01", periods=20)
+    aaa = make_bars(rising(11), start="2024-01-01")
+    panel = Panel({"AAA": aaa}, sessions, S, 0.40)
+    assert panel.last_bar_until("AAA", sessions[15]) == sessions[10]
+    assert panel.last_bar_until("AAA", sessions[5]) == sessions[5]
+    assert panel.last_bar_until("ZZZ", sessions[5]) is None

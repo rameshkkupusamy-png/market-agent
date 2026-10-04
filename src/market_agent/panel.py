@@ -65,3 +65,9 @@ class Panel:
 
     def last_day(self, ticker: str) -> pd.Timestamp | None:
         return self._last_day.get(ticker)
+
+    def last_bar_until(self, ticker: str, day: pd.Timestamp) -> pd.Timestamp | None:
+        """The latest day up to `day` with a usable price (no look-ahead)."""
+        if ticker not in self.tickers:
+            return None
+        return self._wide["close"][ticker].loc[:day].last_valid_index()
