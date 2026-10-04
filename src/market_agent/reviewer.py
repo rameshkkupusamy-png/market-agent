@@ -16,6 +16,7 @@ from market_agent.settings import AiSettings
 VERDICTS = ("approve", "skip", "flag")
 CONFIDENCE = ("low", "medium", "high")
 MAX_ITEMS = 3
+RETRY_SEPARATOR = "\n\n--- retry ---\n\n"  # joins the answers of a retried review
 # Models that take server-side refusal fallbacks (a false positive is retried on another model).
 FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1"}
 
@@ -191,9 +192,28 @@ class Reviewer:
         s = self._settings
         return (answer.input_tokens * s.input_price + answer.output_tokens * s.output_price) / 1e6
 
-    def _not_reviewed(self, item: ReviewInput, prompt: str, note: str, cost: float = 0.0) -> Review:
+    def _not_reviewed(
+        self,
+        item: ReviewInput,
+        prompt: str,
+        note: str,
+        cost: float = 0.0,
+        model: str | None = None,
+        answer: str | None = None,
+    ) -> Review:
         return Review(
-            item.ticker, "not reviewed", "approve", None, [], [], [], note, cost, None, prompt, None
+            item.ticker,
+            "not reviewed",
+            "approve",
+            None,
+            [],
+            [],
+            [],
+            note,
+            cost,
+            model,
+            prompt,
+            answer,
         )
 
     def review(self, item: ReviewInput) -> Review:
@@ -205,12 +225,21 @@ class Reviewer:
             return self._not_reviewed(item, prompt, f"monthly cap of US${cap:.2f} reached")
         cost = 0.0
         answer: Answer | None = None
+        texts: list[str] = []
         for _ in range(2):  # one retry for an invalid answer
             try:
                 answer = self._model.ask(SYSTEM, prompt)
             except ModelUnavailable as exc:
-                return self._not_reviewed(item, prompt, f"Claude unavailable: {exc}", cost)
+                return self._not_reviewed(
+                    item,
+                    prompt,
+                    f"Claude unavailable: {exc}",
+                    cost,
+                    answer.model if answer else None,
+                    RETRY_SEPARATOR.join(texts) if texts else None,
+                )
             cost += self._cost(answer)
+            texts.append(answer.text)
             parsed = parse_answer(answer.text, len(item.headlines))
             if parsed is not None:
                 return Review(
@@ -220,7 +249,7 @@ class Reviewer:
                     cost=cost,
                     model=answer.model,
                     prompt=prompt,
-                    answer=answer.text,
+                    answer=RETRY_SEPARATOR.join(texts),
                     **parsed,
                 )
         assert answer is not None
@@ -236,5 +265,5 @@ class Reviewer:
             cost,
             answer.model,
             prompt,
-            answer.text,
+            RETRY_SEPARATOR.join(texts),
         )

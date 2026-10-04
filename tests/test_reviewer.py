@@ -104,9 +104,26 @@ def test_invalid_answer_is_retried_once():
     assert review.cost == pytest.approx(2 * 0.008)
 
 
+def test_retried_review_keeps_both_answers():
+    review = reviewer(FakeModel("not json", VALID)).review(ITEM)
+    assert review.status == "reviewed"
+    assert review.answer == "not json\n\n--- retry ---\n\n" + VALID
+    assert review.model == "fake-model"
+
+
+def test_invalid_then_unavailable_keeps_the_answer_and_cost():
+    model = FakeModel("not json", ModelUnavailable("HTTP 529: overloaded"))
+    review = reviewer(model).review(ITEM)
+    assert (review.status, review.verdict) == ("not reviewed", "approve")
+    assert review.note == "Claude unavailable: HTTP 529: overloaded"
+    assert (review.answer, review.model) == ("not json", "fake-model")
+    assert review.cost == pytest.approx(0.008)
+
+
 def test_invalid_twice_is_flagged():
     review = reviewer(FakeModel("{}", "not json")).review(ITEM)
     assert (review.status, review.verdict, review.note) == ("failed", "flag", "review failed")
+    assert review.answer == "{}\n\n--- retry ---\n\nnot json"
 
 
 @pytest.mark.parametrize(
