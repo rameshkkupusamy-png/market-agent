@@ -10,7 +10,8 @@ import pandas as pd
 
 from market_agent.broker import BarLookup
 from market_agent.panel import Panel
-from market_agent.portfolio import Portfolio
+from market_agent.portfolio import Portfolio, portfolio_from_json, portfolio_to_json
+from market_agent.store import Store
 
 PORTFOLIOS = ("rules-only", "rules+ai")
 RESTATED = 1e-4  # relative change in a stored close that counts as a split or dividend
@@ -74,3 +75,24 @@ def gone_lookup(
         return end if end is not None and end < window_start else None
 
     return last_day
+
+
+class PaperError(Exception):
+    """A paper-trading command can't be done; the message says why."""
+
+
+def reset_breaker(store: Store, name: str) -> str:
+    """The owner's reset (spec section 5): the current equity becomes the new peak."""
+    day = store.latest_paper_day()
+    if day is None:
+        raise PaperError("Paper trading has not started yet: run `agent run-daily` first.")
+    p = portfolio_from_json(store.paper_states(day)[name])
+    if not p.halted:
+        raise PaperError(f"The circuit breaker is not on for {name}.")
+    equity = p.equity_history[-1][1] if p.equity_history else p.cash
+    p.halted = False
+    p.breaker_tripped = False
+    p.peak = equity
+    p.events.append(f"{day:%Y-%m-%d}: circuit breaker reset by the owner at equity {equity:,.0f}")
+    store.replace_paper_state(name, day, portfolio_to_json(p))
+    return f"Circuit breaker reset for {name}; new positions are allowed from the next run."

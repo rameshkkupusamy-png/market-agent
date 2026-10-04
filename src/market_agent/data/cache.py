@@ -24,11 +24,14 @@ class PriceCache:
         self._source = source
         self._today = today
 
-    def update(self, ticker: str, start: date) -> bool:
-        """Make sure the cache holds `ticker` up to today. Returns False if there is no data."""
+    def update(self, ticker: str, start: date, force: bool = False) -> bool:
+        """Make sure the cache holds `ticker` up to today. Returns False if there is no data.
+
+        force: download again even if it was downloaded today (the day's data was late).
+        """
         today = self._today()
         stamp = today.isoformat()
-        if self._store.fetched_on(ticker) == stamp:
+        if not force and self._store.fetched_on(ticker) == stamp:
             return self._store.load_prices(ticker) is not None
         try:
             bars = self._source.fetch(ticker, pd.Timestamp(start), pd.Timestamp(today))

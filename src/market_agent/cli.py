@@ -1,26 +1,34 @@
-"""agent fetch | build-sectors | backtest --period tuning|test|full"""
+"""agent fetch | build-sectors | backtest --period tuning|test|full
+| run-daily | catch-up | reset-breaker <portfolio> | report [--day YYYY-MM-DD]"""
 
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 import time
 from collections.abc import Callable
 from dataclasses import asdict
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
+from market_agent.daily import DailyRun, run_days, send_results
 from market_agent.data.cache import EarningsCache, PriceCache
+from market_agent.data.finnhub import FinnhubNews, NoNews
 from market_agent.data.sources import Profile
 from market_agent.data.yahoo import YahooEarnings, YahooPrices, YahooSectors
 from market_agent.earnings import EarningsCalendar
 from market_agent.guard import GuardError, check_test_period
+from market_agent.notify import NoTelegram, Telegram
 from market_agent.panel import Panel
+from market_agent.paper import PORTFOLIOS, PaperError, reset_breaker
+from market_agent.reviewer import ClaudeModel, Reviewer
+from market_agent.sessions import TradingCalendar
 from market_agent.settings import Settings, SettingsError, load_settings
 from market_agent.store import Store
 from market_agent.universe import Universe, load_profiles, load_sectors, write_profiles
@@ -51,6 +59,29 @@ def sector_source():
     return YahooSectors()
 
 
+def trading_calendar(settings: Settings) -> TradingCalendar:
+    start = pd.Timestamp(settings.data.history_start)
+    return TradingCalendar.nyse(start, pd.Timestamp.today().normalize() + pd.Timedelta(days=7))
+
+
+def news_source():
+    key = os.environ.get("FINNHUB_API_KEY")
+    return FinnhubNews(key) if key else NoNews()
+
+
+def claude_model(settings: Settings):
+    return ClaudeModel(settings.ai) if os.environ.get("ANTHROPIC_API_KEY") else None
+
+
+def telegram():
+    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    return Telegram(token, chat) if token and chat else NoTelegram()
+
+
+def now() -> pd.Timestamp:
+    return pd.Timestamp.now(tz="UTC")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="agent", description="Swing-trading analyst")
     parser.add_argument("--config", type=Path, help=f"settings file (default {DEFAULT_CONFIG})")
@@ -59,6 +90,14 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("build-sectors", help="write data/sectors.csv from Yahoo")
     backtest = commands.add_parser("backtest", help="run the backtest from cached data")
     backtest.add_argument("--period", choices=PERIODS, default="tuning")
+    commands.add_parser(
+        "run-daily", help="trade the latest US trading day (and any missed ones) on paper"
+    )
+    commands.add_parser("catch-up", help="process missed trading days without waiting for data")
+    reset = commands.add_parser("reset-breaker", help="turn a portfolio's circuit breaker off")
+    reset.add_argument("portfolio", choices=PORTFOLIOS)
+    report = commands.add_parser("report", help="show a saved daily report")
+    report.add_argument("--day", type=date.fromisoformat, help="YYYY-MM-DD (default: latest)")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     load_dotenv(Path(".env"))  # the working folder only, so tests never pick up real keys
@@ -74,6 +113,14 @@ def main(argv: list[str] | None = None) -> int:
             return fetch(settings, store)
         if args.command == "build-sectors":
             return build_sectors(settings, store)
+        if args.command == "run-daily":
+            return daily_command(settings, store, wait=True)
+        if args.command == "catch-up":
+            return daily_command(settings, store, wait=False)
+        if args.command == "reset-breaker":
+            return reset_command(store, args.portfolio)
+        if args.command == "report":
+            return report_command(store, args.day)
         return backtest_command(settings, store, args.period)
     finally:
         store.close()
@@ -161,6 +208,70 @@ def build_sectors(settings: Settings, store: Store) -> int:
     unknown = sum(1 for p in profiles.values() if p.sector == "Unknown")
     print(f"Sectors written for {len(profiles)} tickers ({unknown} unknown)")
     return report_failures(failed)
+
+
+def refetch(settings: Settings, store: Store, tickers: list[str]) -> None:
+    prices = PriceCache(store, price_source())
+    for ticker in tickers:
+        try:
+            with_retries(
+                ticker, lambda t=ticker: prices.update(t, settings.data.history_start, True)
+            )
+        except Exception as exc:
+            log.warning("%s: download failed again (%s)", ticker, exc)
+
+
+def month_start() -> datetime:
+    return datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def daily_command(settings: Settings, store: Store, wait: bool) -> int:
+    if fetch(settings, store) != 0:
+        print("Some downloads failed; the data check decides whether the day can be traded.")
+    reviewer = Reviewer(
+        claude_model(settings), settings.ai, lambda: store.ai_spent_since(month_start())
+    )
+    runner = DailyRun(settings, store, reviewer, news_source())
+    results = run_days(
+        settings,
+        store,
+        trading_calendar(settings),
+        runner,
+        now=now,
+        wait=wait,
+        refetch=lambda tickers: refetch(settings, store, tickers),
+        sleep=pause,
+    )
+    if not results:
+        print("Nothing to do: every closed trading day is already processed.")
+        return 0
+    for result in results:
+        print(f"{result.day:%Y-%m-%d}: {result.status}")
+    print()
+    print(results[-1].report)
+    for problem in send_results(store, results, telegram()):
+        print(f"Telegram: {problem}. The report is saved; see `agent report`.", file=sys.stderr)
+    return 0
+
+
+def reset_command(store: Store, name: str) -> int:
+    try:
+        print(reset_breaker(store, name))
+    except PaperError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+def report_command(store: Store, day: date | None) -> int:
+    run = store.daily_run(pd.Timestamp(day)) if day else store.latest_daily_run()
+    if run is None:
+        print("No saved report for that day. Run `agent run-daily` first.", file=sys.stderr)
+        return 1
+    print(run["report"])
+    if not run["sent"]:
+        print("\n(not sent to Telegram)")
+    return 0
 
 
 def period_dates(

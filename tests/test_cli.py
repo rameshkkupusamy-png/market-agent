@@ -5,7 +5,10 @@ import pandas as pd
 
 from helpers import make_bars
 from market_agent import cli
+from market_agent.data.finnhub import NoNews
 from market_agent.data.sources import EarningsHistory, NoData, Profile
+from market_agent.portfolio import portfolio_from_json, portfolio_to_json
+from market_agent.sessions import TradingCalendar
 from market_agent.store import Store
 
 N = 320
@@ -267,3 +270,64 @@ def test_env_file_in_the_working_folder_is_loaded(tmp_path, monkeypatch):
     (tmp_path / ".env").write_text("MARKET_AGENT_TEST=yes\n", encoding="utf-8")
     cli.main(["backtest"])  # fails (no data), but loads .env first
     assert os.environ["MARKET_AGENT_TEST"] == "yes"
+
+
+SESSIONS = list(pd.bdate_range("2020-06-01", periods=N))
+
+
+class FakeTelegram:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, text):
+        self.sent.append(text)
+
+
+def daily_setup(tmp_path, monkeypatch, now_index=255):
+    setup(tmp_path, monkeypatch)
+    telegram = FakeTelegram()
+    closes = [(d + pd.Timedelta(hours=20)).tz_localize("UTC") for d in SESSIONS]
+    monkeypatch.setattr(cli, "trading_calendar", lambda settings: TradingCalendar(SESSIONS, closes))
+    monkeypatch.setattr(cli, "now", lambda: closes[now_index] + pd.Timedelta(hours=2))
+    monkeypatch.setattr(cli, "news_source", NoNews)
+    monkeypatch.setattr(cli, "claude_model", lambda settings: None)
+    monkeypatch.setattr(cli, "telegram", lambda: telegram)
+    return telegram
+
+
+def test_run_daily_trades_reports_and_sends(tmp_path, monkeypatch, capsys):
+    telegram = daily_setup(tmp_path, monkeypatch)
+    day = f"{SESSIONS[255]:%Y-%m-%d}"
+    assert cli.main(["run-daily"]) == 0
+    assert f"{day}: traded" in capsys.readouterr().out
+    assert telegram.sent[0].startswith(f"Market agent, {day}")
+    assert cli.main(["run-daily"]) == 0
+    assert "Nothing to do" in capsys.readouterr().out
+    assert cli.main(["report"]) == 0
+    assert capsys.readouterr().out.startswith(f"Market agent, {day}")
+    assert cli.main(["catch-up"]) == 0
+
+
+def test_report_before_any_run(tmp_path, monkeypatch, capsys):
+    daily_setup(tmp_path, monkeypatch)
+    assert cli.main(["report"]) == 1
+    assert "No saved report" in capsys.readouterr().err
+
+
+def test_reset_breaker(tmp_path, monkeypatch, capsys):
+    daily_setup(tmp_path, monkeypatch)
+    cli.main(["run-daily"])
+    assert cli.main(["reset-breaker", "rules+ai"]) == 1
+    assert "The circuit breaker is not on for rules+ai" in capsys.readouterr().err
+    store = Store(tmp_path / "data" / "market.db")
+    day = store.latest_paper_day()
+    p = portfolio_from_json(store.paper_states(day)["rules+ai"])
+    p.halted = p.breaker_tripped = True
+    store.replace_paper_state("rules+ai", day, portfolio_to_json(p))
+    store.close()
+    assert cli.main(["reset-breaker", "rules+ai"]) == 0
+    store = Store(tmp_path / "data" / "market.db")
+    p = portfolio_from_json(store.paper_states(day)["rules+ai"])
+    store.close()
+    assert not p.halted and p.peak == p.equity_history[-1][1]
+    assert p.events[-1].endswith("circuit breaker reset by the owner at equity 10,000")

@@ -39,6 +39,26 @@ The backtest prints how many universe members had no data (companies that left t
 vanished from Yahoo). They are a mix of failed and acquired companies, so the direction of the
 bias is uncertain, though probably upward.
 
+## Paper trading
+
+Both portfolios start with US$10,000 of simulated money on the first run. `rules-only` buys
+every candidate the rules allow; `rules+ai` leaves out candidates Claude marks "skip".
+
+1. Copy `.env.example` to `.env` and fill in the keys (Claude, Finnhub, Telegram). Without a
+   Claude key candidates are "not reviewed"; without Finnhub the reviews see no news; without
+   Telegram the report is only saved.
+2. Run `agent build-sectors` once so reviews see company names.
+
+```powershell
+agent run-daily              # download, then trade every closed day not processed yet
+agent catch-up               # the same, without waiting for late data
+agent report                 # the latest report (--day YYYY-MM-DD for another day)
+agent reset-breaker rules+ai # after a 15% fall the portfolio stops buying until reset
+```
+
+`run-daily` waits up to 2 hours for the latest day's data, then skips trading that day. Claude
+reviews cost about US$4 a month and stop at the US$5 monthly cap (`ai.monthly_cap`).
+
 ## Prices
 
 Signals and simulated fills use prices adjusted for later splits and dividends, so returns are

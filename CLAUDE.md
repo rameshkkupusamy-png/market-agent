@@ -36,6 +36,10 @@ agent fetch                      # ~10 years of prices + earnings dates into dat
 agent build-sectors              # writes data/sectors.csv
 agent backtest --period tuning   # 2015–2021, re-run freely
 agent backtest --period test     # 2022–today, guarded (see below)
+agent run-daily                  # download, then paper-trade every closed day not processed yet
+agent catch-up                   # the same, without waiting for late data
+agent report [--day YYYY-MM-DD]  # show a saved daily report
+agent reset-breaker rules+ai     # owner's reset after the circuit breaker halts a portfolio
 ```
 
 ## Architecture
@@ -67,6 +71,14 @@ backtest-only assumptions.
   delisted positions at the last close, queues time exits and trips the circuit breaker. Every
   fill pays slippage and commission. The breaker halts new entries until the owner resets it,
   except in the backtest (`halt_on_breaker=False`), which records each trip and keeps trading.
+- **Paper trading** (`daily.py`): `run_days` processes each closed NYSE session not yet in
+  `paper_states`, in order (catch-up), and only the latest day may wait for late data.
+  `DailyRun.process` checks the data (`checks.py`), screens, has Claude review the top
+  candidates (`reviewer.py`, cost-capped), then per portfolio runs `paper.restate` (Yahoo
+  re-adjusts history after splits/dividends) and `trading.trade_day`, the same step the backtest
+  uses. Each day saves a JSON snapshot per portfolio plus the report in one transaction. Paper
+  portfolios halt on the circuit breaker until `agent reset-breaker`. News for day D is cut off
+  at 18:00 New York time so catch-up runs see what an on-time run would have.
 - **Test-period guard** (`guard.py` + `cli.backtest_command`): `test` and `full` both cover the
   test period. Re-running them with an already-used fingerprint is refused. Running them with new
   settings after an earlier run is allowed but warns that this is tuning on the test period.

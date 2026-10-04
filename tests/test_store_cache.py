@@ -292,3 +292,11 @@ def test_reviews_and_monthly_spend(store):
         ["Guidance cut"],
         True,
     )
+
+
+def test_price_cache_force_downloads_again(store):
+    source = FakePrices({"AAPL": make_bars([10, 11])})
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2))
+    cache.update("AAPL", date(2014, 1, 1))
+    cache.update("AAPL", date(2014, 1, 1), force=True)
+    assert len(source.calls) == 2
