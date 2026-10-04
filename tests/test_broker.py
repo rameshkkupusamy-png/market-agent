@@ -150,3 +150,16 @@ def test_breaker_without_halt_records_each_drawdown_once():
         "2024-03-08: circuit breaker would turn on, equity 8,500 is 19.0% below peak 10,500 "
         "(the backtest keeps trading)",
     ]
+
+
+def test_close_records_the_day_prices_were_marked():
+    p = held()
+    Simulator(R, S).close(p, D1, lookup({("AAA", D1): Bar(100, 101, 99, 100.5)}), lambda t: D3)
+    assert p.positions["AAA"].marked_on == D1
+
+
+def test_buy_is_marked_on_its_fill_day():
+    p = Portfolio("p", 10_000.0)
+    p.orders.append(Order("AAA", "buy", 10, "breakout", D0, atr=2.0))
+    Simulator(R, S).open(p, D1, lookup({("AAA", D1): Bar(100, 101, 99, 100.5)}))
+    assert p.positions["AAA"].marked_on == D1

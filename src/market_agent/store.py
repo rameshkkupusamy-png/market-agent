@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,14 @@ CREATE TABLE IF NOT EXISTS backtest_trades (
     backtest_id INTEGER, ticker TEXT, entry_day TEXT, entry_price REAL, exit_day TEXT,
     exit_price REAL, shares INTEGER, exit_reason TEXT, pnl REAL);
 CREATE TABLE IF NOT EXISTS backtest_equity (backtest_id INTEGER, day TEXT, equity REAL);
+CREATE TABLE IF NOT EXISTS paper_states (
+    portfolio TEXT, day TEXT, state TEXT, PRIMARY KEY (portfolio, day));
+CREATE TABLE IF NOT EXISTS daily_runs (
+    day TEXT PRIMARY KEY, created_at TEXT, status TEXT, report TEXT, alerts TEXT, sent INTEGER);
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT, day TEXT, ticker TEXT, status TEXT,
+    verdict TEXT, confidence TEXT, reasons TEXT, risks TEXT, news_used TEXT, note TEXT,
+    late INTEGER, model TEXT, prompt TEXT, answer TEXT, cost REAL);
 """
 
 
@@ -228,3 +237,86 @@ class Store:
             }
             for r in rows
         ]
+
+    # paper trading
+    def save_day(
+        self,
+        day: pd.Timestamp,
+        states: Mapping[str, str],
+        status: str,
+        report: str,
+        alerts: list[str],
+    ) -> None:
+        """Both portfolios and the day's run record, in one transaction."""
+        with self._conn:
+            self._conn.executemany(
+                "INSERT OR REPLACE INTO paper_states VALUES (?, ?, ?)",
+                [(name, _day(day), state) for name, state in states.items()],
+            )
+            self._conn.execute(
+                "INSERT OR REPLACE INTO daily_runs VALUES (?, ?, ?, ?, ?, 0)",
+                (
+                    _day(day),
+                    datetime.now().isoformat(timespec="seconds"),
+                    status,
+                    report,
+                    json.dumps(alerts),
+                ),
+            )
+
+    def _paper_day(self, sql: str) -> pd.Timestamp | None:
+        value = self._conn.execute(sql).fetchone()[0]
+        return pd.Timestamp(value) if value else None
+
+    def latest_paper_day(self) -> pd.Timestamp | None:
+        return self._paper_day("SELECT MAX(day) FROM paper_states")
+
+    def first_paper_day(self) -> pd.Timestamp | None:
+        return self._paper_day("SELECT MIN(day) FROM paper_states")
+
+    def paper_states(self, day: pd.Timestamp) -> dict[str, str]:
+        rows = self._conn.execute(
+            "SELECT portfolio, state FROM paper_states WHERE day = ?", (_day(day),)
+        )
+        return dict(rows.fetchall())
+
+    def replace_paper_state(self, portfolio: str, day: pd.Timestamp, state: str) -> None:
+        with self._conn:
+            self._conn.execute(
+                "UPDATE paper_states SET state = ? WHERE portfolio = ? AND day = ?",
+                (state, portfolio, _day(day)),
+            )
+
+    def _run(self, row: tuple | None) -> dict[str, Any] | None:
+        if row is None:
+            return None
+        day, created_at, status, report, alerts, sent = row
+        return {
+            "day": pd.Timestamp(day),
+            "created_at": created_at,
+            "status": status,
+            "report": report,
+            "alerts": json.loads(alerts),
+            "sent": bool(sent),
+        }
+
+    def daily_run(self, day: pd.Timestamp) -> dict[str, Any] | None:
+        return self._run(
+            self._conn.execute(
+                "SELECT day, created_at, status, report, alerts, sent FROM daily_runs "
+                "WHERE day = ?",
+                (_day(day),),
+            ).fetchone()
+        )
+
+    def latest_daily_run(self) -> dict[str, Any] | None:
+        return self._run(
+            self._conn.execute(
+                "SELECT day, created_at, status, report, alerts, sent FROM daily_runs "
+                "ORDER BY day DESC LIMIT 1"
+            ).fetchone()
+        )
+
+    def mark_sent(self, day: pd.Timestamp) -> None:
+        with self._conn:
+            self._conn.execute("UPDATE daily_runs SET sent = 1 WHERE day = ?", (_day(day),))

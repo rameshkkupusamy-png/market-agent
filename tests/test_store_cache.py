@@ -240,3 +240,26 @@ def test_earnings_source_error_keeps_stored_dates(store):
         cache.update("AAPL")
     assert store.load_earnings()["AAPL"] == history
     assert store.earnings_fetched_on("AAPL") == "2026-10-01"
+
+
+def test_paper_days_and_daily_runs(store):
+    d1, d2 = pd.Timestamp("2026-10-01"), pd.Timestamp("2026-10-02")
+    assert store.latest_paper_day() is None and store.first_paper_day() is None
+    store.save_day(d1, {"rules-only": "{1}", "rules+ai": "{2}"}, "traded", "report 1", [])
+    store.save_day(d2, {"rules-only": "{3}", "rules+ai": "{4}"}, "no trading", "report 2", ["!"])
+    assert store.latest_paper_day() == d2 and store.first_paper_day() == d1
+    assert store.paper_states(d1) == {"rules-only": "{1}", "rules+ai": "{2}"}
+    run = store.daily_run(d2)
+    assert (run["status"], run["report"], run["alerts"], run["sent"]) == (
+        "no trading",
+        "report 2",
+        ["!"],
+        False,
+    )
+    store.mark_sent(d2)
+    assert store.daily_run(d2)["sent"] is True
+    assert store.latest_daily_run()["day"] == d2
+    store.replace_paper_state("rules-only", d2, "{5}")
+    assert store.paper_states(d2)["rules-only"] == "{5}"
+    assert store.daily_run(pd.Timestamp("2026-09-30")) is None
+    assert store.paper_states(pd.Timestamp("2026-09-30")) == {}

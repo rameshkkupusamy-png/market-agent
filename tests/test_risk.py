@@ -84,3 +84,9 @@ def test_unknown_sector_has_no_sector_cap():
     assert check_limits("NEW", "Unknown", held, R) is None
     held.update({f"S{i}": f"S{i}" for i in range(5)})
     assert check_limits("NEW", "Unknown", held, R) == "10 positions already open"
+
+
+def test_orders_remember_the_close_they_were_sized_on():
+    p = Portfolio("rules-only", 10_000)
+    plan_entries(p, [candidate("A", close=50.0)], 10_000, {}, R, S, DAY)
+    assert p.orders[0].ref_close == 50.0

@@ -75,6 +75,7 @@ class Simulator:
                     self._exit(p, ticker, day, pos.last_close, "delisted")
                 continue
             pos.last_close = b.close
+            pos.marked_on = day
             pos.days_held += 1
             if pos.days_held >= self.strategy.max_hold_days and ticker not in selling:
                 p.orders.append(Order(ticker, "sell", pos.shares, "time", day))
@@ -113,6 +114,7 @@ class Simulator:
             stop=b.open - self.strategy.stop_atr * order.atr,
             target=b.open + self.strategy.target_atr * order.atr,
             last_close=b.open,
+            marked_on=day,
         )
 
     def _exit(

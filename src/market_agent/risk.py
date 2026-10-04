@@ -74,7 +74,9 @@ def plan_entries(
         if shares == 0:
             notes.append(f"{c.ticker}: not enough cash")
             continue
-        portfolio.orders.append(Order(c.ticker, "buy", shares, "breakout", day, c.atr, sector))
+        portfolio.orders.append(
+            Order(c.ticker, "buy", shares, "breakout", day, c.atr, sector, ref_close=c.close)
+        )
         committed += shares * c.close * (1 + risk.slippage) + risk.commission
         slots -= 1
     return notes
