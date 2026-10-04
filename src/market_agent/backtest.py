@@ -13,9 +13,9 @@ from market_agent.broker import Simulator
 from market_agent.earnings import EarningsCalendar
 from market_agent.panel import Panel
 from market_agent.portfolio import Portfolio, Trade
-from market_agent.risk import plan_entries
 from market_agent.settings import Settings
 from market_agent.strategy import screen
+from market_agent.trading import trade_day
 from market_agent.universe import Universe
 
 
@@ -79,17 +79,14 @@ def run_backtest(
     signals = without_earnings = exposed_days = 0
 
     for day in days:
-        sim.open(portfolio, day, panel.bar)
-        sim.intraday(portfolio, day, panel.bar)
-        equity = sim.close(portfolio, day, panel.bar, panel.last_day)
-        if portfolio.positions:
-            exposed_days += 1
         candidates = screen(
             day, panel.snapshot(day), universe.members(day), earnings, settings.strategy
         )
         signals += len(candidates)
         without_earnings += sum(not c.earnings_known for c in candidates)
-        plan_entries(portfolio, candidates, equity, sectors, settings.risk, settings.strategy, day)
+        trade_day(sim, portfolio, day, panel, panel.last_day, candidates, sectors, settings)
+        if portfolio.positions:
+            exposed_days += 1
 
     equity_series = pd.Series(dict(portfolio.equity_history), name="equity")
     bench = benchmark_close.loc[days[0] : days[-1]]
