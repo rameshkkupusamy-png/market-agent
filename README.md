@@ -59,6 +59,11 @@ agent reset-breaker rules+ai # after a 15% fall the portfolio stops buying until
 `run-daily` waits up to 2 hours for the latest day's data, then skips trading that day. Claude
 reviews cost about US$4 a month and stop at the US$5 monthly cap (`ai.monthly_cap`).
 
+To run it every trading day by itself (06:30 Tuesday–Saturday Malaysia time, or as soon as the
+computer is back on), run once:
+`powershell -ExecutionPolicy Bypass -File scripts\schedule-daily.ps1`. Output goes to
+`data\daily.log`. Remove it with `Unregister-ScheduledTask "Market agent daily run"`.
+
 ## Prices
 
 Signals and simulated fills use prices adjusted for later splits and dividends, so returns are
