@@ -1,3 +1,4 @@
+import http.client
 import urllib.error
 
 import pytest
@@ -54,3 +55,19 @@ def test_api_errors_raise():
 def test_no_telegram_explains():
     with pytest.raises(TelegramError, match="TELEGRAM_BOT_TOKEN"):
         NoTelegram().send("hi")
+
+
+def test_protocol_errors_raise_telegram_error():
+    def post(url, data):
+        raise http.client.IncompleteRead(b"")
+
+    with pytest.raises(TelegramError):
+        Telegram("TOKEN", "42", post).send("hi")
+
+
+def test_unexpected_response_raises_telegram_error():
+    def post(url, data):
+        return ["not", "a", "dict"]
+
+    with pytest.raises(TelegramError, match="unexpected Telegram response"):
+        Telegram("TOKEN", "42", post).send("hi")

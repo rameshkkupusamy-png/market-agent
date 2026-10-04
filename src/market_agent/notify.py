@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import urllib.error
 import urllib.parse
@@ -58,8 +59,14 @@ class Telegram:
             data = {"chat_id": self._chat_id, "text": chunk, "disable_web_page_preview": "true"}
             try:
                 result = self._post(url, data)
-            except (OSError, ValueError) as exc:  # URLError is an OSError
+            except (
+                OSError,
+                ValueError,
+                http.client.HTTPException,
+            ) as exc:
                 raise TelegramError(str(exc).replace(self._token, "<token>")) from None
+            if not isinstance(result, dict):
+                raise TelegramError("unexpected Telegram response")
             if not result.get("ok"):
                 raise TelegramError(result.get("description", "unknown Telegram error"))
 
