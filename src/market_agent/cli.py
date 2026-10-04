@@ -17,7 +17,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
-from market_agent.daily import DailyRun, run_days, send_results
+from market_agent.daily import DailyRun, processable, run_days, send_results
 from market_agent.data.cache import EarningsCache, PriceCache
 from market_agent.data.finnhub import FinnhubNews, NoNews
 from market_agent.data.sources import Profile
@@ -158,15 +158,19 @@ def report_failures(failed: list[str]) -> int:
     return 1
 
 
-def fetch(settings: Settings, store: Store) -> int:
-    prices = PriceCache(store, price_source())
+def fetch(settings: Settings, store: Store, fresh_after: pd.Timestamp | None = None) -> int:
+    """fresh_after: also download again what was downloaded before this time (UTC)."""
+    prices = PriceCache(store, price_source(), now=lambda: now())
     earnings = EarningsCache(store, earnings_source())
     tickers = [*universe_tickers(settings), settings.data.benchmark]
     failed = []
     for index, ticker in enumerate(tickers, 1):
         try:
             has_data = with_retries(
-                ticker, lambda t=ticker: prices.update(t, settings.data.history_start)
+                ticker,
+                lambda t=ticker: prices.update(
+                    t, settings.data.history_start, fresh_after=fresh_after
+                ),
             )
             if has_data and ticker != settings.data.benchmark:
                 with_retries(ticker, lambda t=ticker: earnings.update(t))
@@ -211,7 +215,7 @@ def build_sectors(settings: Settings, store: Store) -> int:
 
 
 def refetch(settings: Settings, store: Store, tickers: list[str]) -> None:
-    prices = PriceCache(store, price_source())
+    prices = PriceCache(store, price_source(), now=lambda: now())
     for ticker in tickers:
         try:
             with_retries(
@@ -225,8 +229,17 @@ def month_start() -> datetime:
     return datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
+def settled_since(settings: Settings, calendar: TradingCalendar) -> pd.Timestamp | None:
+    """When the latest processable session's data settled: downloads before then may hold
+    preliminary bars."""
+    settle = settings.paper.settle_minutes
+    latest = processable(calendar, now(), settle)
+    return None if latest is None else calendar.close(latest) + pd.Timedelta(minutes=settle)
+
+
 def daily_command(settings: Settings, store: Store, wait: bool) -> int:
-    if fetch(settings, store) != 0:
+    calendar = trading_calendar(settings)
+    if fetch(settings, store, fresh_after=settled_since(settings, calendar)) != 0:
         print("Some downloads failed; the data check decides whether the day can be traded.")
     reviewer = Reviewer(
         claude_model(settings), settings.ai, lambda: store.ai_spent_since(month_start())
@@ -235,7 +248,7 @@ def daily_command(settings: Settings, store: Store, wait: bool) -> int:
     results = run_days(
         settings,
         store,
-        trading_calendar(settings),
+        calendar,
         runner,
         now=now,
         wait=wait,

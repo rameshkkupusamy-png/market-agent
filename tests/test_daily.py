@@ -259,3 +259,20 @@ def test_long_catch_up_still_sends_no_trading_alerts(tmp_path):
     assert telegram.sent[0].startswith("Caught up 4 missed trading days")
     assert telegram.sent[1] == results[-1].report
     assert telegram.sent[2:] == [skipped.report]
+
+
+def test_a_session_is_processed_only_once_its_data_has_settled(tmp_path):
+    w = make_world(tmp_path, sessions=SESSIONS[250:])
+    assert run(w, closing(SESSIONS[250]) + pd.Timedelta(minutes=30)) == []  # first run: nothing
+    [first] = run(w, closing(SESSIONS[250]) + pd.Timedelta(minutes=60))
+    assert first.day == SESSIONS[250]
+    assert run(w, closing(SESSIONS[251]) + pd.Timedelta(minutes=30)) == []  # 250 already done
+    [second] = run(w, closing(SESSIONS[251]) + pd.Timedelta(minutes=60))
+    assert second.day == SESSIONS[251]
+
+
+def test_an_unsettled_latest_session_leaves_the_previous_one(tmp_path):
+    w = make_world(tmp_path)
+    run(w, after_close(249))
+    results = run(w, closing(SESSIONS[251]) + pd.Timedelta(minutes=30))
+    assert [r.day for r in results] == [SESSIONS[250]]

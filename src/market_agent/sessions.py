@@ -28,6 +28,10 @@ class TradingCalendar:
         index = bisect_right(self._closes, now) - 1
         return self.sessions[index] if index >= 0 else None
 
+    def close(self, session: pd.Timestamp) -> pd.Timestamp:
+        """The session's closing time in UTC."""
+        return self._closes[self.sessions.index(session)]
+
     def between(self, after: pd.Timestamp | None, until: pd.Timestamp) -> list[pd.Timestamp]:
         return [s for s in self.sessions if (after is None or s > after) and s <= until]
 

@@ -15,12 +15,15 @@ from market_agent.store import Store
 
 PORTFOLIOS = ("rules-only", "rules+ai")
 RESTATED = 1e-4  # relative change in a stored close that counts as a split or dividend
+AGREE = 1e-3  # how closely the entry day must confirm a restatement of the whole history
 
 
-def restate(portfolio: Portfolio, bar: BarLookup) -> list[str]:
+def restate(portfolio: Portfolio, bar: BarLookup, slippage: float) -> list[str]:
     """Rescale what was stored in the old price scale after Yahoo restated a history.
 
-    Shares are divided by the factor so each position keeps its value and profit.
+    Shares are divided by the factor so each position keeps its value and profit. A split or
+    dividend scales the whole history, so the entry day's open must show the same factor;
+    otherwise only the latest bar was corrected and the position keeps its scale.
     """
     notes = []
     for ticker, pos in portfolio.positions.items():
@@ -30,6 +33,16 @@ def restate(portfolio: Portfolio, bar: BarLookup) -> list[str]:
         factor = b.close / pos.last_close
         if abs(factor - 1) <= RESTATED:
             continue
+        entry = bar(ticker, pos.entry_day)
+        if entry is not None and pos.entry_price > 0:
+            entry_factor = entry.open * (1 + slippage) / pos.entry_price
+            if abs(entry_factor / factor - 1) > AGREE:
+                notes.append(
+                    f"{ticker}: latest price corrected ({pos.last_close:.2f} → {b.close:.2f}); "
+                    "position not rescaled"
+                )
+                pos.last_close = b.close
+                continue
         pos.entry_price *= factor
         pos.stop *= factor
         pos.target *= factor

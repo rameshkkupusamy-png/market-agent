@@ -143,7 +143,8 @@ class DailyRun:
         sectors = {ticker: p.sector for ticker, p in market.profiles.items()}
         fills: list[str] = []
         for name, portfolio in portfolios.items():
-            warnings += [f"{name}: {note}" for note in restate(portfolio, market.panel.bar)]
+            notes = restate(portfolio, market.panel.bar, s.risk.slippage)
+            warnings += [f"{name}: {note}" for note in notes]
             was_halted = portfolio.halted
             taken = candidates
             if name == "rules+ai":
@@ -223,9 +224,20 @@ class DailyRun:
         return reviews
 
 
-def pending_days(store: Store, calendar: TradingCalendar, now: pd.Timestamp) -> list[pd.Timestamp]:
-    """Closed sessions not processed yet. The very first run starts with the latest one."""
-    latest = calendar.latest_closed(now)
+def processable(
+    calendar: TradingCalendar, now: pd.Timestamp, settle_minutes: float
+) -> pd.Timestamp | None:
+    """The latest session whose data has settled: closed at least settle_minutes ago.
+
+    Bars fetched soon after the close may still be preliminary."""
+    return calendar.latest_closed(now - pd.Timedelta(minutes=settle_minutes))
+
+
+def pending_days(
+    store: Store, calendar: TradingCalendar, now: pd.Timestamp, settle_minutes: float
+) -> list[pd.Timestamp]:
+    """Settled sessions not processed yet. The very first run starts with the latest one."""
+    latest = processable(calendar, now, settle_minutes)
     if latest is None:
         return []
     last = store.latest_paper_day()
@@ -244,7 +256,7 @@ def run_days(
 ) -> list[DayResult]:
     """Process every pending day in order. Only the latest day can be waited for; with
     wait=False an incomplete latest day is left for the next run (its data may still come)."""
-    days = pending_days(store, calendar, now())
+    days = pending_days(store, calendar, now(), settings.paper.settle_minutes)
     if not days:
         return []
     deadline = now() + pd.Timedelta(hours=settings.paper.retry_hours)

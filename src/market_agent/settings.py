@@ -69,6 +69,7 @@ class PaperSettings:
     retry_every_minutes: float = 15.0
     max_missing_share: float = 0.05  # more eligible tickers failing than this: no trading
     delisted_after_days: int = 5  # sessions without a price before a held share is closed
+    settle_minutes: float = 60.0  # a session is processed only this long after its close
 
 
 @dataclass(frozen=True)

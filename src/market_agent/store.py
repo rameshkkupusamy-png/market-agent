@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS prices (
     ticker TEXT, day TEXT, open REAL, high REAL, low REAL, close REAL, volume REAL,
     raw_close REAL, raw_volume REAL, PRIMARY KEY (ticker, day));
 CREATE TABLE IF NOT EXISTS price_meta (
-    ticker TEXT PRIMARY KEY, fetched_on TEXT, has_data INTEGER);
+    ticker TEXT PRIMARY KEY, fetched_on TEXT, has_data INTEGER, fetched_at TEXT);
 CREATE TABLE IF NOT EXISTS earnings (ticker TEXT, day TEXT, PRIMARY KEY (ticker, day));
 CREATE TABLE IF NOT EXISTS earnings_meta (
     ticker TEXT PRIMARY KEY, fetched_on TEXT, coverage_start TEXT);
@@ -57,6 +57,7 @@ class Store:
         self._conn = sqlite3.connect(str(path))
         self._conn.executescript(SCHEMA)
         self._add_traded_prices()
+        self._add_fetch_times()
 
     def _add_traded_prices(self) -> None:
         """Databases from before as-traded prices: add the columns, download prices again."""
@@ -68,11 +69,26 @@ class Store:
             self._conn.execute("ALTER TABLE prices ADD COLUMN raw_volume REAL")
             self._conn.execute("UPDATE price_meta SET fetched_on = NULL WHERE has_data = 1")
 
+    def _add_fetch_times(self) -> None:
+        """Databases from before fetch times: add the column (NULL counts as not fresh)."""
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(price_meta)")}
+        if "fetched_at" in columns:
+            return
+        with self._conn:
+            self._conn.execute("ALTER TABLE price_meta ADD COLUMN fetched_at TEXT")
+
     def close(self) -> None:
         self._conn.close()
 
     # prices
-    def replace_prices(self, ticker: str, bars: pd.DataFrame, fetched_on: str) -> None:
+    def replace_prices(
+        self,
+        ticker: str,
+        bars: pd.DataFrame,
+        fetched_on: str,
+        fetched_at: pd.Timestamp | None = None,
+    ) -> None:
+        """fetched_on: the local date; fetched_at: the UTC time of the download."""
         rows = [
             (ticker, _day(day), *(float(row[c]) for c in PRICE_COLUMNS))
             for day, row in bars.iterrows()
@@ -84,22 +100,37 @@ class Store:
                 f"VALUES ({', '.join('?' * (len(PRICE_COLUMNS) + 2))})",
                 rows,
             )
-            self._conn.execute(
-                "INSERT OR REPLACE INTO price_meta VALUES (?, ?, 1)", (ticker, fetched_on)
-            )
+            self._set_meta(ticker, fetched_on, True, fetched_at)
 
-    def mark_missing(self, ticker: str, fetched_on: str) -> None:
+    def mark_missing(
+        self, ticker: str, fetched_on: str, fetched_at: pd.Timestamp | None = None
+    ) -> None:
         with self._conn:
             self._conn.execute("DELETE FROM prices WHERE ticker = ?", (ticker,))
-            self._conn.execute(
-                "INSERT OR REPLACE INTO price_meta VALUES (?, ?, 0)", (ticker, fetched_on)
-            )
+            self._set_meta(ticker, fetched_on, False, fetched_at)
+
+    def _set_meta(
+        self, ticker: str, fetched_on: str, has_data: bool, fetched_at: pd.Timestamp | None
+    ) -> None:
+        stamp = fetched_at.tz_convert("UTC").isoformat() if fetched_at is not None else None
+        self._conn.execute(
+            "INSERT OR REPLACE INTO price_meta (ticker, fetched_on, has_data, fetched_at) "
+            "VALUES (?, ?, ?, ?)",
+            (ticker, fetched_on, int(has_data), stamp),
+        )
 
     def fetched_on(self, ticker: str) -> str | None:
         row = self._conn.execute(
             "SELECT fetched_on FROM price_meta WHERE ticker = ?", (ticker,)
         ).fetchone()
         return row[0] if row else None
+
+    def fetched_at(self, ticker: str) -> pd.Timestamp | None:
+        """When the ticker was last downloaded (UTC), if known."""
+        row = self._conn.execute(
+            "SELECT fetched_at FROM price_meta WHERE ticker = ?", (ticker,)
+        ).fetchone()
+        return pd.Timestamp(row[0]) if row and row[0] else None
 
     def load_prices(self, ticker: str) -> pd.DataFrame | None:
         rows = self._conn.execute(

@@ -300,3 +300,60 @@ def test_price_cache_force_downloads_again(store):
     cache.update("AAPL", date(2014, 1, 1))
     cache.update("AAPL", date(2014, 1, 1), force=True)
     assert len(source.calls) == 2
+
+
+def utc(text):
+    return pd.Timestamp(text, tz="UTC")
+
+
+def test_price_cache_downloads_again_when_fetched_before_the_data_settled(store):
+    source = FakePrices({"AAPL": make_bars([10, 11])})
+    clock = {"now": utc("2026-10-02 20:30")}
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2), now=lambda: clock["now"])
+    cache.update("AAPL", date(2014, 1, 1))
+    assert store.fetched_at("AAPL") == utc("2026-10-02 20:30")
+    cache.update("AAPL", date(2014, 1, 1), fresh_after=utc("2026-10-02 20:30"))
+    assert len(source.calls) == 1  # fetched at the time asked for: fresh
+    cache.update("AAPL", date(2014, 1, 1))
+    assert len(source.calls) == 1  # without fresh_after the date rule alone applies
+    clock["now"] = utc("2026-10-02 22:30")
+    cache.update("AAPL", date(2014, 1, 1), fresh_after=utc("2026-10-02 21:00"))
+    assert len(source.calls) == 2  # fetched before the data settled: downloaded again
+    assert store.fetched_at("AAPL") == utc("2026-10-02 22:30")
+    cache.update("AAPL", date(2014, 1, 1), fresh_after=utc("2026-10-02 21:00"))
+    assert len(source.calls) == 2
+
+
+def test_price_cache_records_when_a_missing_ticker_was_checked(store):
+    cache = PriceCache(
+        store, FakePrices({}), today=lambda: date(2026, 10, 2), now=lambda: utc("2026-10-02 22:00")
+    )
+    cache.update("TWTR", date(2014, 1, 1))
+    assert store.fetched_at("TWTR") == utc("2026-10-02 22:00")
+
+
+def test_database_without_fetch_times_is_upgraded(tmp_path):
+    path = tmp_path / "old.db"
+    conn = sqlite3.connect(path)
+    conn.executescript(
+        "CREATE TABLE prices (ticker TEXT, day TEXT, open REAL, high REAL, low REAL, close REAL,"
+        " volume REAL, raw_close REAL, raw_volume REAL, PRIMARY KEY (ticker, day));"
+        "CREATE TABLE price_meta (ticker TEXT PRIMARY KEY, fetched_on TEXT, has_data INTEGER);"
+        "INSERT INTO prices VALUES ('AAPL', '2026-10-01', 1, 1, 1, 1, 100, 1, 100);"
+        "INSERT INTO price_meta VALUES ('AAPL', '2026-10-02', 1);"
+    )
+    conn.commit()
+    conn.close()
+    store = Store(path)
+    columns = {row[1] for row in store._conn.execute("PRAGMA table_info(price_meta)")}
+    assert "fetched_at" in columns
+    assert store.fetched_on("AAPL") == "2026-10-02" and store.fetched_at("AAPL") is None
+    source = FakePrices({"AAPL": make_bars([10, 11])})
+    cache = PriceCache(
+        store, source, today=lambda: date(2026, 10, 2), now=lambda: utc("2026-10-02 23:00")
+    )
+    cache.update("AAPL", date(2014, 1, 1))
+    assert source.calls == []  # same date, no fresh_after: the old rule
+    cache.update("AAPL", date(2014, 1, 1), fresh_after=utc("2026-10-02 21:00"))
+    assert len(source.calls) == 1  # no fetch time counts as stale
+    store.close()

@@ -18,20 +18,48 @@ from market_agent.store import Store
 log = logging.getLogger(__name__)
 
 
+def utc_now() -> pd.Timestamp:
+    return pd.Timestamp.now(tz="UTC")
+
+
 class PriceCache:
-    def __init__(self, store: Store, source: PriceSource, today: Callable[[], date] = date.today):
+    def __init__(
+        self,
+        store: Store,
+        source: PriceSource,
+        today: Callable[[], date] = date.today,
+        now: Callable[[], pd.Timestamp] = utc_now,
+    ):
+        """today: the local date stamp; now: the UTC time recorded with each download."""
         self._store = store
         self._source = source
         self._today = today
+        self._now = now
 
-    def update(self, ticker: str, start: date, force: bool = False) -> bool:
+    def _fresh(self, ticker: str, stamp: str, fresh_after: pd.Timestamp | None) -> bool:
+        if self._store.fetched_on(ticker) != stamp:
+            return False
+        if fresh_after is None:
+            return True
+        fetched_at = self._store.fetched_at(ticker)
+        return fetched_at is not None and fetched_at >= fresh_after
+
+    def update(
+        self,
+        ticker: str,
+        start: date,
+        force: bool = False,
+        fresh_after: pd.Timestamp | None = None,
+    ) -> bool:
         """Make sure the cache holds `ticker` up to today. Returns False if there is no data.
 
         force: download again even if it was downloaded today (the day's data was late).
+        fresh_after: also download again if the last download was before this time (UTC), so
+        bars cached before the day's data settled are replaced.
         """
         today = self._today()
         stamp = today.isoformat()
-        if not force and self._store.fetched_on(ticker) == stamp:
+        if not force and self._fresh(ticker, stamp, fresh_after):
             return self._store.load_prices(ticker) is not None
         try:
             bars = self._source.fetch(ticker, pd.Timestamp(start), pd.Timestamp(today))
@@ -43,9 +71,9 @@ class PriceCache:
                 log.warning("%s: no price data this time, keeping the cached prices", ticker)
                 return True
             log.info("%s: no price data", ticker)
-            self._store.mark_missing(ticker, stamp)
+            self._store.mark_missing(ticker, stamp, self._now())
             return False
-        self._store.replace_prices(ticker, bars, stamp)
+        self._store.replace_prices(ticker, bars, stamp, self._now())
         return True
 
     def load(self, ticker: str) -> pd.DataFrame | None:

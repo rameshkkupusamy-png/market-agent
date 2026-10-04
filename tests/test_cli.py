@@ -331,3 +331,27 @@ def test_reset_breaker(tmp_path, monkeypatch, capsys):
     store.close()
     assert not p.halted and p.peak == p.equity_history[-1][1]
     assert p.events[-1].endswith("circuit breaker reset by the owner at equity 10,000")
+
+
+class CountingPrices(Prices):
+    calls: list[str] = []
+
+    def fetch(self, ticker, start, end):
+        self.calls.append(ticker)
+        return super().fetch(ticker, start, end)
+
+
+def test_run_daily_downloads_again_prices_fetched_before_they_settled(tmp_path, monkeypatch):
+    daily_setup(tmp_path, monkeypatch)
+    monkeypatch.setattr(CountingPrices, "calls", [])
+    monkeypatch.setattr(cli, "price_source", CountingPrices)
+    close = (SESSIONS[255] + pd.Timedelta(hours=20)).tz_localize("UTC")
+    run_daily_at = cli.now
+    monkeypatch.setattr(cli, "now", lambda: close + pd.Timedelta(minutes=10))
+    assert cli.main(["fetch"]) == 0
+    assert CountingPrices.calls.count("SPY") == 1
+    monkeypatch.setattr(cli, "now", run_daily_at)
+    assert cli.main(["run-daily"]) == 0
+    assert CountingPrices.calls.count("SPY") == 2  # the early download is replaced
+    assert cli.main(["catch-up"]) == 0
+    assert CountingPrices.calls.count("SPY") == 2  # fetched after it settled: kept
