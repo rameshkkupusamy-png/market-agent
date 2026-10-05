@@ -64,6 +64,18 @@ computer is back on), run once:
 `powershell -ExecutionPolicy Bypass -File scripts\schedule-daily.ps1`. Output goes to
 `data\daily.log`. Remove it with `Unregister-ScheduledTask "Market agent daily run"`.
 
+## Dashboard
+
+```powershell
+agent dashboard        # opens http://localhost:8501; Ctrl+C to stop
+```
+
+Five pages, read-only: Overview (both portfolios against SPY), Today (any saved day's report,
+candidates, Claude's verdicts with the news used, and the orders for the next open), Positions
+and trades, AI review (every review and how the skipped candidates would have done) and
+Backtest (every run against SPY with the settings it used). It only reads `data\market.db`, so
+it can stay open while the 06:30 run works, and it listens on this computer only.
+
 ## Prices
 
 Signals and simulated fills use prices adjusted for later splits and dividends, so returns are

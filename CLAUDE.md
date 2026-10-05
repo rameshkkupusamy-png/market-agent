@@ -40,6 +40,7 @@ agent run-daily                  # download, then paper-trade every closed day n
 agent catch-up                   # the same, without waiting for late data
 agent report [--day YYYY-MM-DD]  # show a saved daily report
 agent reset-breaker rules+ai     # owner's reset after the circuit breaker halts a portfolio
+agent dashboard [--port 8501]    # read-only Streamlit dashboard on localhost
 ```
 
 ## Architecture
@@ -79,6 +80,12 @@ backtest-only assumptions.
   uses. Each day saves a JSON snapshot per portfolio plus the report in one transaction. Paper
   portfolios halt on the circuit breaker until `agent reset-breaker`. News for day D is cut off
   at 18:00 New York time so catch-up runs see what an on-time run would have.
+- **Dashboard** (`dashboard/`): `reviews.py`, `paper.py` and `backtests.py` turn the Store into
+  DataFrames and are tested without Streamlit; `display.py` formats them (percentages, plain
+  dates, value charts whose y axis doesn't start at zero); `app.py` only renders. It opens the
+  database with `Store(path, read_only=True)` (SQLite `mode=ro`: no schema, no migrations), and
+  `agent dashboard` starts Streamlit on localhost with `MARKET_AGENT_DB` / `MARKET_AGENT_CONFIG`
+  set. App tests use `streamlit.testing.v1.AppTest` on `helpers.dashboard_db`.
 - **Test-period guard** (`guard.py` + `cli.backtest_command`): `test` and `full` both cover the
   test period. Re-running them with an already-used fingerprint is refused. Running them with new
   settings after an earlier run is allowed but warns that this is tuning on the test period.

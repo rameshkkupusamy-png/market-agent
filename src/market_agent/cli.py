@@ -1,11 +1,13 @@
 """agent fetch | build-sectors | backtest --period tuning|test|full
-| run-daily | catch-up | reset-breaker <portfolio> | report [--day YYYY-MM-DD]"""
+| run-daily | catch-up | reset-breaker <portfolio> | report [--day YYYY-MM-DD]
+| dashboard [--port N]"""
 
 from __future__ import annotations
 
 import argparse
 import logging
 import os
+import subprocess
 import sys
 import time
 import traceback
@@ -83,6 +85,35 @@ def now() -> pd.Timestamp:
     return pd.Timestamp.now(tz="UTC")
 
 
+def run_process(command: list[str], env: dict[str, str]) -> int:
+    """Replaced in tests."""
+    return subprocess.run(command, env=env).returncode
+
+
+def dashboard_command(settings: Settings, config: Path, port: int) -> int:
+    app = Path(__file__).parent / "dashboard" / "app.py"
+    env = {
+        **os.environ,
+        "MARKET_AGENT_DB": str(Path(settings.data.db_path).resolve()),
+        "MARKET_AGENT_CONFIG": str(config.resolve()),
+    }
+    command = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(app),
+        "--server.address",
+        "localhost",
+        "--server.port",
+        str(port),
+        "--browser.gatherUsageStats",
+        "false",
+    ]
+    print(f"Dashboard at http://localhost:{port} (Ctrl+C to stop)")
+    return run_process(command, env)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="agent", description="Swing-trading analyst")
     parser.add_argument("--config", type=Path, help=f"settings file (default {DEFAULT_CONFIG})")
@@ -99,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     reset.add_argument("portfolio", choices=PORTFOLIOS)
     report = commands.add_parser("report", help="show a saved daily report")
     report.add_argument("--day", type=date.fromisoformat, help="YYYY-MM-DD (default: latest)")
+    dashboard = commands.add_parser("dashboard", help="open the read-only dashboard in a browser")
+    dashboard.add_argument("--port", type=int, default=8501)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     load_dotenv(Path(".env"))  # the working folder only, so tests never pick up real keys
@@ -108,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
     except SettingsError as exc:
         print(f"Settings error: {exc}", file=sys.stderr)
         return 1
+    if args.command == "dashboard":
+        return dashboard_command(settings, args.config or DEFAULT_CONFIG, args.port)
     store = Store(settings.data.db_path)
     try:
         if args.command == "fetch":

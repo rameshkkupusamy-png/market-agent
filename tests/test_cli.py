@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import sys
+from pathlib import Path
 
 import pandas as pd
 
@@ -406,3 +408,18 @@ def test_a_crash_whose_alert_cannot_be_sent_is_printed(tmp_path, monkeypatch, ca
     err = capsys.readouterr().err
     assert "RuntimeError: boom" in err
     assert "Could not send the failure alert: ConnectionError: no network" in err
+
+
+def test_dashboard_starts_streamlit_on_localhost(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    calls = []
+    monkeypatch.setattr(cli, "run_process", lambda command, env: calls.append((command, env)) or 0)
+    assert cli.main(["dashboard", "--port", "8600"]) == 0
+    [(command, env)] = calls
+    assert command[:4] == [sys.executable, "-m", "streamlit", "run"]
+    assert command[4].endswith("app.py") and Path(command[4]).exists()
+    assert command[command.index("--server.address") + 1] == "localhost"
+    assert command[command.index("--server.port") + 1] == "8600"
+    assert env["MARKET_AGENT_DB"] == str((tmp_path / "data" / "market.db").resolve())
+    assert env["MARKET_AGENT_CONFIG"] == str((tmp_path / "config.yaml").resolve())
+    assert "http://localhost:8600" in capsys.readouterr().out
