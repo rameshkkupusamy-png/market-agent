@@ -15,6 +15,7 @@ dependencies = [
     "anthropic>=1.11",
     "exchange_calendars>=4.13",
     "python-dotenv>=1.0",
+    "streamlit>=1.40",
 ]
 
 [project.optional-dependencies]
