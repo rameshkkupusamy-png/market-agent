@@ -1,3 +1,4 @@
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -55,3 +56,15 @@ def test_dashboard_never_changes_the_database(tmp_path, monkeypatch):
     for page in PAGES:
         open_page(monkeypatch, db, page)
     assert db.read_bytes() == before
+
+
+def test_database_busy_or_mid_write_is_explained(tmp_path, monkeypatch):
+    import market_agent.dashboard.paper as paper
+
+    def locked(*args, **kwargs):
+        raise sqlite3.OperationalError("attempt to write a readonly database")
+
+    monkeypatch.setattr(paper, "equity_curves", locked)
+    at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Overview")
+    assert not at.exception
+    assert "being written" in at.error[0].value

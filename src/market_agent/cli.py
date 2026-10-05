@@ -109,9 +109,15 @@ def dashboard_command(settings: Settings, config: Path, port: int) -> int:
         str(port),
         "--browser.gatherUsageStats",
         "false",
+        "--server.showEmailPrompt",  # first-run prompt would make it look hung
+        "false",
     ]
     print(f"Dashboard at http://localhost:{port} (Ctrl+C to stop)")
-    return run_process(command, env)
+    try:
+        return run_process(command, env)
+    except KeyboardInterrupt:  # Ctrl+C is the normal way to stop it
+        print("Dashboard stopped.")
+        return 0
 
 
 def main(argv: list[str] | None = None) -> int:

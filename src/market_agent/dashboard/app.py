@@ -2,6 +2,7 @@
 MARKET_AGENT_DB and MARKET_AGENT_CONFIG; run on its own it uses data/market.db."""
 
 import os
+import sqlite3
 from pathlib import Path
 
 import streamlit as st
@@ -153,6 +154,13 @@ def main() -> None:
             "Backtest": backtest_page,
         }
         pages[page](store, settings)
+    except sqlite3.OperationalError:
+        # A daily run is writing, or one was interrupted mid-write (a read-only connection
+        # can't roll that back); the next `agent` command repairs it.
+        st.error(
+            "The database is being written or was left mid-write by an interrupted run. "
+            "Wait a minute and refresh; if it persists, run `agent report` once to repair it."
+        )
     finally:
         store.close()
 

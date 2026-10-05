@@ -420,6 +420,18 @@ def test_dashboard_starts_streamlit_on_localhost(tmp_path, monkeypatch, capsys):
     assert command[4].endswith("app.py") and Path(command[4]).exists()
     assert command[command.index("--server.address") + 1] == "localhost"
     assert command[command.index("--server.port") + 1] == "8600"
+    assert command[command.index("--server.showEmailPrompt") + 1] == "false"
     assert env["MARKET_AGENT_DB"] == str((tmp_path / "data" / "market.db").resolve())
     assert env["MARKET_AGENT_CONFIG"] == str((tmp_path / "config.yaml").resolve())
     assert "http://localhost:8600" in capsys.readouterr().out
+
+
+def test_dashboard_stops_cleanly_on_ctrl_c(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+
+    def interrupted(command, env):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli, "run_process", interrupted)
+    assert cli.main(["dashboard"]) == 0
+    assert "Dashboard stopped." in capsys.readouterr().out
