@@ -44,6 +44,7 @@ def build_report(
     candidates: Sequence[Candidate],
     reviews: Mapping[str, Review],
     fills: Sequence[str],
+    orders: Sequence[str],
     warnings: Sequence[str],
 ) -> str:
     out = [f"Market agent, {day:%Y-%m-%d} (paper trading, simulated money)", ""]
@@ -63,6 +64,8 @@ def build_report(
         out.append("Candidates: none today")
     if fills:
         out += ["", "Fills:", *(f"- {fill}" for fill in fills)]
+    if orders:
+        out += ["", "Orders for the next open:", *(f"- {order}" for order in orders)]
     if warnings:
         out += ["", "Warnings:", *(f"- {warning}" for warning in warnings)]
     return "\n".join(out)
@@ -80,3 +83,8 @@ def fills_on(p: Portfolio, day: pd.Timestamp) -> list[str]:
         if t.exit_day == day
     ]
     return lines
+
+
+def orders_for_next_open(p: Portfolio) -> list[str]:
+    """Orders placed after today's close, to be filled at the next session's open."""
+    return [f"{p.name} {o.side}s {o.shares:g} {o.ticker} ({o.reason})" for o in p.orders]

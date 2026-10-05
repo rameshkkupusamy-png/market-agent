@@ -23,7 +23,7 @@ from market_agent.paper import (
     unexplained_jumps,
 )
 from market_agent.portfolio import Portfolio, portfolio_from_json, portfolio_to_json
-from market_agent.report import PortfolioLine, build_report, fills_on
+from market_agent.report import PortfolioLine, build_report, fills_on, orders_for_next_open
 from market_agent.reviewer import Review, ReviewInput
 from market_agent.sessions import TradingCalendar
 from market_agent.settings import Settings
@@ -148,6 +148,7 @@ class DailyRun:
         last_day = gone_lookup(market.panel, sessions, s.paper.delisted_after_days)
         sectors = {ticker: p.sector for ticker, p in market.profiles.items()}
         fills: list[str] = []
+        orders: list[str] = []
         for name, portfolio in portfolios.items():
             notes = restate(portfolio, market.panel.bar, s.risk.slippage)
             warnings += [f"{name}: {note}" for note in notes]
@@ -168,6 +169,7 @@ class DailyRun:
                 taken = [c for c in candidates if self._verdict(reviews, c) != "skip"]
             trade_day(sim, portfolio, day, panel, last_day, taken, sectors, s)
             fills += fills_on(portfolio, day)
+            orders += orders_for_next_open(portfolio)
             if portfolio.halted and not was_halted:
                 alerts.append(
                     f"{name}: {portfolio.events[-1]}. No new positions until "
@@ -182,7 +184,9 @@ class DailyRun:
             )
             for name, p in portfolios.items()
         ]
-        report = build_report(day, lines, spy_return, first, candidates, reviews, fills, warnings)
+        report = build_report(
+            day, lines, spy_return, first, candidates, reviews, fills, orders, warnings
+        )
         new_states = {name: portfolio_to_json(p) for name, p in portfolios.items()}
         self.store.save_day(day, new_states, "traded", report, alerts)
         return DayResult(day, "traded", report, alerts)

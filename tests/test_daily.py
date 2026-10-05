@@ -121,6 +121,8 @@ def test_first_run_processes_only_the_latest_closed_day(tmp_path):
     assert [o.ticker for o in state(w, SESSIONS[250]).orders] == ["AAA"]
     assert "Candidates (1):" in result.report
     assert "- AAA: approve (high): fine" in result.report
+    assert "Orders for the next open:" in result.report
+    assert "- rules-only buys" in result.report
     assert w.store.daily_run(SESSIONS[250])["report"] == result.report
     assert [item.ticker for item in w.reviewer.items] == ["AAA"]
 
