@@ -52,7 +52,15 @@ def _json_default(value: Any) -> Any:
 
 
 class Store:
-    def __init__(self, path: Path | str):
+    def __init__(self, path: Path | str, read_only: bool = False):
+        """read_only: for the dashboard — the file must exist; nothing is created or migrated,
+        and SQLite refuses every write, so it can stay open while the daily run writes."""
+        if read_only:
+            path = Path(path)
+            if not path.exists():
+                raise FileNotFoundError(f"No database at {path}")
+            self._conn = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+            return
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(path))
         self._conn.executescript(SCHEMA)
@@ -351,6 +359,76 @@ class Store:
     def mark_sent(self, day: pd.Timestamp) -> None:
         with self._conn:
             self._conn.execute("UPDATE daily_runs SET sent = 1 WHERE day = ?", (_day(day),))
+
+    def paper_days(self) -> list[pd.Timestamp]:
+        rows = self._conn.execute("SELECT DISTINCT day FROM paper_states ORDER BY day")
+        return [pd.Timestamp(r[0]) for r in rows.fetchall()]
+
+    def all_reviews(self) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT day, ticker, status, verdict, confidence, reasons, risks, news_used, note, "
+            "late, model, prompt, answer, cost, created_at FROM reviews "
+            "ORDER BY day DESC, id DESC"
+        ).fetchall()
+        keys = (
+            "day",
+            "ticker",
+            "status",
+            "verdict",
+            "confidence",
+            "reasons",
+            "risks",
+            "news_used",
+            "note",
+            "late",
+            "model",
+            "prompt",
+            "answer",
+            "cost",
+            "created_at",
+        )
+        result = []
+        for row in rows:
+            record = dict(zip(keys, row, strict=True))
+            record["day"] = pd.Timestamp(record["day"])
+            for key in ("reasons", "risks", "news_used"):
+                record[key] = json.loads(record[key])
+            record["late"] = bool(record["late"])
+            result.append(record)
+        return result
+
+    def backtest_list(self) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT id, created_at, period, start, end, fingerprint, settings, metrics, "
+            "benchmark, notes FROM backtests ORDER BY id DESC"
+        ).fetchall()
+        return [
+            {
+                "id": r[0],
+                "created_at": r[1],
+                "period": r[2],
+                "start": pd.Timestamp(r[3]),
+                "end": pd.Timestamp(r[4]),
+                "fingerprint": r[5],
+                "settings": json.loads(r[6]),
+                "metrics": json.loads(r[7]),
+                "benchmark": json.loads(r[8]),
+                "notes": json.loads(r[9]),
+            }
+            for r in rows
+        ]
+
+    def backtest_equity(self, backtest_id: int) -> pd.Series:
+        rows = self._conn.execute(
+            "SELECT day, equity FROM backtest_equity WHERE backtest_id = ? ORDER BY day",
+            (backtest_id,),
+        ).fetchall()
+        return pd.Series(
+            [r[1] for r in rows],
+            index=pd.DatetimeIndex([pd.Timestamp(r[0]) for r in rows]),
+            name="equity",
+            dtype=float,
+        )
 
     # AI reviews
     def save_review(self, day: pd.Timestamp, review: Any, late: bool) -> None:

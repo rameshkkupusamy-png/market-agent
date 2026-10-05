@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from helpers import make_bars
+from helpers import DASHBOARD_DAYS, dashboard_db, make_bars
 from market_agent.data.cache import EarningsCache, PriceCache
 from market_agent.data.sources import EarningsHistory, NoData, normalize_bars
 from market_agent.store import Store
@@ -356,4 +356,42 @@ def test_database_without_fetch_times_is_upgraded(tmp_path):
     assert source.calls == []  # same date, no fresh_after: the old rule
     cache.update("AAPL", date(2014, 1, 1), fresh_after=utc("2026-10-02 21:00"))
     assert len(source.calls) == 1  # no fetch time counts as stale
+    store.close()
+
+
+def test_read_only_store_refuses_writes_and_creates_nothing(tmp_path):
+    db = dashboard_db(tmp_path / "market.db")
+    before = db.read_bytes()
+    store = Store(db, read_only=True)
+    assert store.latest_paper_day() == DASHBOARD_DAYS[-1]
+    with pytest.raises(sqlite3.OperationalError):
+        store.mark_sent(DASHBOARD_DAYS[-2])
+    store.close()
+    assert db.read_bytes() == before
+    with pytest.raises(FileNotFoundError):
+        Store(tmp_path / "nothing" / "market.db", read_only=True)
+    assert not (tmp_path / "nothing").exists()
+
+
+def test_dashboard_queries(tmp_path):
+    store = Store(dashboard_db(tmp_path / "market.db"), read_only=True)
+    assert store.paper_days() == [DASHBOARD_DAYS[-2], DASHBOARD_DAYS[-1]]
+    reviews = store.all_reviews()
+    assert [(r["day"], r["ticker"], r["verdict"]) for r in reviews] == [
+        (DASHBOARD_DAYS[-1], "CCC", "approve"),
+        (DASHBOARD_DAYS[-20], "AAA", "skip"),
+    ]
+    assert reviews[1]["news_used"] == [0, 5] and reviews[1]["prompt"].startswith("Candidate: AAA")
+    assert reviews[1]["late"] is False
+    [run] = store.backtest_list()
+    assert (run["id"], run["period"], run["fingerprint"]) == (1, "tuning", "abc123def456")
+    assert (run["start"], run["end"]) == (DASHBOARD_DAYS[0], DASHBOARD_DAYS[-1])
+    assert run["settings"] == {
+        "strategy": {"volume_ratio": 1.5},
+        "risk": {"starting_cash": 10000.0},
+    }
+    assert run["metrics"]["total_return"] == 0.039 and run["benchmark"]["total_return"] == 0.0488
+    equity = store.backtest_equity(1)
+    assert list(equity.index) == list(DASHBOARD_DAYS)
+    assert equity.iloc[0] == 10_000.0 and equity.name == "equity"
     store.close()
