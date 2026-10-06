@@ -97,6 +97,62 @@ def test_fetch_build_sectors_and_backtest(tmp_path, monkeypatch, capsys):
     assert f"{'Total return':16}{cli._pct(strategy_total):>12}{cli._pct(spy_total):>12}" in out
 
 
+class CountingPrices(Prices):
+    calls: list[str] = []
+
+    def fetch(self, ticker, start, end):
+        self.calls.append(ticker)
+        return super().fetch(ticker, start, end)
+
+
+def set_fetched_on(tmp_path, ticker, days_ago):
+    day = (pd.Timestamp.today() - pd.Timedelta(days=days_ago)).date().isoformat()
+    conn = sqlite3.connect(tmp_path / "data" / "market.db")
+    conn.execute("UPDATE price_meta SET fetched_on = ? WHERE ticker = ?", (day, ticker))
+    conn.commit()
+    conn.close()
+
+
+def test_fetch_skips_former_members_without_data(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    (tmp_path / "data" / "sp500_membership.csv").write_text(
+        'date,tickers\n2020-06-01,"AAA,GONE"\n2021-01-04,"AAA,NEW"\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(CountingPrices, "calls", [])
+    monkeypatch.setattr(cli, "price_source", CountingPrices)
+    assert cli.main(["fetch"]) == 0
+    assert sorted(CountingPrices.calls) == ["AAA", "GONE", "NEW", "SPY"]
+    # The next day: GONE left the index and never had data, so it waits; NEW is a current
+    # member and is tried every day although it had no data either.
+    for ticker in ["AAA", "GONE", "NEW", "SPY"]:
+        set_fetched_on(tmp_path, ticker, days_ago=1)
+    CountingPrices.calls.clear()
+    capsys.readouterr()
+    assert cli.main(["fetch"]) == 0
+    assert sorted(CountingPrices.calls) == ["AAA", "NEW", "SPY"]
+    out = capsys.readouterr().out
+    assert "Prices: 2 tickers with data, 2 without (GONE, NEW)" in out
+    assert "Skipped 1 former member without data (tried again every 30 days)" in out
+
+
+def test_fetch_tries_former_members_again_after_the_recheck_interval(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    (tmp_path / "data" / "sp500_membership.csv").write_text(
+        'date,tickers\n2020-06-01,"AAA,GONE"\n2021-01-04,"AAA"\n', encoding="utf-8"
+    )
+    write_config(tmp_path, extra="  missing_recheck_days: 7\n")
+    monkeypatch.setattr(CountingPrices, "calls", [])
+    monkeypatch.setattr(cli, "price_source", CountingPrices)
+    assert cli.main(["fetch"]) == 0
+    set_fetched_on(tmp_path, "GONE", days_ago=6)
+    CountingPrices.calls.clear()
+    assert cli.main(["fetch"]) == 0
+    assert CountingPrices.calls == []  # GONE waits; the rest were downloaded today already
+    set_fetched_on(tmp_path, "GONE", days_ago=7)
+    assert cli.main(["fetch"]) == 0
+    assert CountingPrices.calls == ["GONE"]
+
+
 def test_backtest_refused_until_traded_prices_are_downloaded(tmp_path, monkeypatch, capsys):
     setup(tmp_path, monkeypatch)
     assert cli.main(["fetch"]) == 0
@@ -333,14 +389,6 @@ def test_reset_breaker(tmp_path, monkeypatch, capsys):
     store.close()
     assert not p.halted and p.peak == p.equity_history[-1][1]
     assert p.events[-1].endswith("circuit breaker reset by the owner at equity 10,000")
-
-
-class CountingPrices(Prices):
-    calls: list[str] = []
-
-    def fetch(self, ticker, start, end):
-        self.calls.append(ticker)
-        return super().fetch(ticker, start, end)
 
 
 def test_run_daily_downloads_again_prices_fetched_before_they_settled(tmp_path, monkeypatch):

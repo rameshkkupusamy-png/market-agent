@@ -174,6 +174,22 @@ def universe_tickers(settings: Settings) -> list[str]:
     return sorted(universe.tickers_between(start, pd.Timestamp(date.today())))
 
 
+def recently_missing(settings: Settings, store: Store) -> set[str]:
+    """Former index members that never had data and were tried within the recheck interval.
+
+    Current members are always tried, so a new member's first failed download heals the next day.
+    """
+    universe = Universe.from_csv(Path(settings.data.membership_csv))
+    today = pd.Timestamp(date.today())
+    current = universe.members(today)
+    since = (today - pd.Timedelta(days=settings.data.missing_recheck_days)).date().isoformat()
+    return {
+        ticker
+        for ticker in store.missing_tickers()
+        if ticker not in current and (store.fetched_on(ticker) or "") > since
+    }
+
+
 def _shown(tickers: list[str]) -> str:
     return ", ".join(tickers[:20]) + (" …" if len(tickers) > 20 else "")
 
@@ -204,7 +220,10 @@ def fetch(settings: Settings, store: Store, fresh_after: pd.Timestamp | None = N
     """fresh_after: also download again what was downloaded before this time (UTC)."""
     prices = PriceCache(store, price_source(), now=lambda: now())
     earnings = EarningsCache(store, earnings_source())
-    tickers = [*universe_tickers(settings), settings.data.benchmark]
+    skipped = recently_missing(settings, store)
+    tickers = [
+        t for t in [*universe_tickers(settings), settings.data.benchmark] if t not in skipped
+    ]
     failed = []
     for index, ticker in enumerate(tickers, 1):
         try:
@@ -226,6 +245,12 @@ def fetch(settings: Settings, store: Store, fresh_after: pd.Timestamp | None = N
         f"Prices: {len(store.tickers_with_prices())} tickers with data, "
         f"{len(missing)} without ({_shown(missing)})"
     )
+    if skipped:
+        noun = "member" if len(skipped) == 1 else "members"
+        print(
+            f"Skipped {len(skipped)} former {noun} without data "
+            f"(tried again every {settings.data.missing_recheck_days} days)"
+        )
     return report_failures(sorted(failed))
 
 

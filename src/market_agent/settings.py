@@ -54,6 +54,8 @@ class DataSettings:
     history_start: date = date(2014, 1, 1)  # a year of warm-up for the 200-day average
     benchmark: str = "SPY"
     max_daily_jump: float = 0.40
+    # A ticker that left the index and never had data is tried again only this often.
+    missing_recheck_days: int = 30
 
 
 @dataclass(frozen=True)
