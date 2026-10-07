@@ -1,0 +1,2 @@
+# Streamlit Community Cloud installs the market_agent package from this repo.
+.

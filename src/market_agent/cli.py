@@ -21,6 +21,12 @@ from dotenv import load_dotenv
 
 from market_agent.backtest import BacktestResult, run_backtest
 from market_agent.daily import DailyRun, DayResult, processable, run_days, send_results
+from market_agent.dashboard.snapshot import (
+    BRANCH,
+    SnapshotError,
+    export_snapshot,
+    publish_snapshot,
+)
 from market_agent.data.cache import EarningsCache, PriceCache
 from market_agent.data.finnhub import FinnhubNews, NoNews
 from market_agent.data.sources import Profile
@@ -120,6 +126,30 @@ def dashboard_command(settings: Settings, config: Path, port: int) -> int:
         return 0
 
 
+def publish_command(settings: Settings, push: bool) -> int:
+    """Export the dashboard snapshot next to the database and push it to the data branch."""
+    db = Path(settings.data.db_path)
+    if not db.exists():
+        print(f"No database at {db}. Run `agent run-daily` first.", file=sys.stderr)
+        return 1
+    out = db.with_name("dashboard.db")
+    result = export_snapshot(db, out, settings.data.benchmark)
+    print(
+        f"Dashboard snapshot: {len(result.tickers)} shares ({_shown(result.tickers)}), "
+        f"{result.size / 1_000_000:.1f} MB in {out}"
+    )
+    if not push:
+        print("Not pushed (--no-push).")
+        return 0
+    try:
+        publish_snapshot(out, Path("."))
+    except SnapshotError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"Pushed to the {BRANCH} branch.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="agent", description="Swing-trading analyst")
     parser.add_argument("--config", type=Path, help=f"settings file (default {DEFAULT_CONFIG})")
@@ -138,6 +168,10 @@ def main(argv: list[str] | None = None) -> int:
     report.add_argument("--day", type=date.fromisoformat, help="YYYY-MM-DD (default: latest)")
     dashboard = commands.add_parser("dashboard", help="open the read-only dashboard in a browser")
     dashboard.add_argument("--port", type=int, default=8501)
+    publish = commands.add_parser(
+        "publish-dashboard", help="push a small copy of the data for the hosted dashboard"
+    )
+    publish.add_argument("--no-push", action="store_true", help="only write data/dashboard.db")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     load_dotenv(Path(".env"))  # the working folder only, so tests never pick up real keys
@@ -149,6 +183,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.command == "dashboard":
         return dashboard_command(settings, args.config or DEFAULT_CONFIG, args.port)
+    if args.command == "publish-dashboard":
+        return publish_command(settings, push=not args.no_push)
     store = Store(settings.data.db_path)
     try:
         if args.command == "fetch":

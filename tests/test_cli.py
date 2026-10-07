@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from helpers import make_bars
+from helpers import dashboard_db, make_bars
 from market_agent import cli
+from market_agent.dashboard.snapshot import SnapshotError, snapshot_time
 from market_agent.data.finnhub import NoNews
 from market_agent.data.sources import EarningsHistory, NoData, Profile
 from market_agent.portfolio import portfolio_from_json, portfolio_to_json
@@ -483,3 +484,48 @@ def test_dashboard_stops_cleanly_on_ctrl_c(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cli, "run_process", interrupted)
     assert cli.main(["dashboard"]) == 0
     assert "Dashboard stopped." in capsys.readouterr().out
+
+
+def test_publish_dashboard_without_push_writes_the_snapshot(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    dashboard_db(tmp_path / "data" / "market.db")
+
+    def must_not_push(path, repo):
+        raise AssertionError("pushed despite --no-push")
+
+    monkeypatch.setattr(cli, "publish_snapshot", must_not_push)
+    assert cli.main(["publish-dashboard", "--no-push"]) == 0
+    snapshot = tmp_path / "data" / "dashboard.db"
+    assert snapshot_time(snapshot) is not None
+    out = capsys.readouterr().out
+    assert "Dashboard snapshot: 4 shares (AAA, BBB, CCC, SPY)" in out
+    assert "Not pushed (--no-push)." in out
+
+
+def test_publish_dashboard_pushes_the_snapshot(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    dashboard_db(tmp_path / "data" / "market.db")
+    calls = []
+    monkeypatch.setattr(cli, "publish_snapshot", lambda path, repo: calls.append((path, repo)))
+    assert cli.main(["publish-dashboard"]) == 0
+    assert calls == [(Path("data") / "dashboard.db", Path("."))]
+    assert "Pushed to the dashboard-data branch." in capsys.readouterr().out
+
+
+def test_publish_dashboard_reports_a_failed_push(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    dashboard_db(tmp_path / "data" / "market.db")
+
+    def offline(path, repo):
+        raise SnapshotError("git push failed: could not resolve host")
+
+    monkeypatch.setattr(cli, "publish_snapshot", offline)
+    assert cli.main(["publish-dashboard"]) == 1
+    assert "git push failed: could not resolve host" in capsys.readouterr().err
+
+
+def test_publish_dashboard_before_any_run(tmp_path, monkeypatch, capsys):
+    setup(tmp_path, monkeypatch)
+    assert cli.main(["publish-dashboard"]) == 1
+    assert "No database at" in capsys.readouterr().err
+    assert not (tmp_path / "data" / "market.db").exists()

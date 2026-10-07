@@ -161,6 +161,8 @@ def main() -> None:
     st.set_page_config(page_title="Market agent", layout="wide")
     st.sidebar.title("Market agent")
     st.sidebar.caption("Paper trading with simulated money. This dashboard only reads.")
+    if snapshot_taken := os.environ.get("MARKET_AGENT_SNAPSHOT"):  # set by the hosted app
+        st.sidebar.caption(f"Data as of {snapshot_taken}")
     page = st.sidebar.radio("Page", PAGES)
     db = Path(os.environ.get("MARKET_AGENT_DB", "data/market.db"))
     if not db.exists():

@@ -41,6 +41,7 @@ agent catch-up                   # the same, without waiting for late data
 agent report [--day YYYY-MM-DD]  # show a saved daily report
 agent reset-breaker rules+ai     # owner's reset after the circuit breaker halts a portfolio
 agent dashboard [--port 8501]    # read-only Streamlit dashboard on localhost
+agent publish-dashboard [--no-push]  # snapshot for the hosted dashboard -> dashboard-data branch
 ```
 
 ## Architecture
@@ -90,6 +91,10 @@ backtest-only assumptions.
   database with `Store(path, read_only=True)` (SQLite `mode=ro`: no schema, no migrations), and
   `agent dashboard` starts Streamlit on localhost with `MARKET_AGENT_DB` / `MARKET_AGENT_CONFIG`
   set. App tests use `streamlit.testing.v1.AppTest` on `helpers.dashboard_db`.
+  `dashboard/snapshot.py` exports the small copy for the hosted app (`streamlit_app.py` at the
+  repo root, run by Streamlit Community Cloud), pushes it as the single commit of the
+  `dashboard-data` branch (git plumbing: the checkout is never touched) and downloads it there
+  with a read-only GitHub token from the app's secrets.
 - **Test-period guard** (`guard.py` + `cli.backtest_command`): `test` and `full` both cover the
   test period. Re-running them with an already-used fingerprint is refused. Running them with new
   settings after an earlier run is allowed but warns that this is tuning on the test period.

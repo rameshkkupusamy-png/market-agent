@@ -61,7 +61,8 @@ reviews cost about US$4 a month and stop at the US$5 monthly cap (`ai.monthly_ca
 
 To run it every trading day by itself (06:30 Tuesday–Saturday Malaysia time, or as soon as the
 computer is back on), run once:
-`powershell -ExecutionPolicy Bypass -File scripts\schedule-daily.ps1`. Output goes to
+`powershell -ExecutionPolicy Bypass -File scripts\schedule-daily.ps1`. It runs
+`scripts\daily.ps1` (the daily run, then `agent publish-dashboard`). Output goes to
 `data\daily.log`. Remove it with `Unregister-ScheduledTask "Market agent daily run"`.
 
 ## Dashboard
@@ -75,6 +76,31 @@ candidates, Claude's verdicts with the news used, and the orders for the next op
 and trades, AI review (every review and how the skipped candidates would have done) and
 Backtest (every run against SPY with the settings it used). It only reads `data\market.db`, so
 it can stay open while the 06:30 run works, and it listens on this computer only.
+
+### Hosted dashboard (Streamlit Community Cloud)
+
+The same dashboard can run online, over a small copy of the data. After each daily run,
+`agent publish-dashboard` writes `data\dashboard.db` (the full database minus the prices and
+earnings the dashboard never reads, a few MB) and force-pushes it as the only commit of the
+`dashboard-data` branch, so the repo's history doesn't grow. The scheduled task does this
+through `scripts\daily.ps1`; a failed push never affects trading. `--no-push` only writes the
+file. The hosted app (`streamlit_app.py`) downloads the snapshot once an hour and shows
+"Data as of" in the sidebar.
+
+One-time setup:
+
+1. Run `agent publish-dashboard` once, to create the `dashboard-data` branch.
+2. On GitHub, create a fine-grained personal access token: Settings → Developer settings →
+   Fine-grained tokens. Repository access: only this repo. Permissions: Contents, read-only.
+3. On share.streamlit.io, create an app from this repo: branch `main`, main file
+   `streamlit_app.py`, and under Advanced settings Python 3.12. Under Secrets, enter:
+
+   ```toml
+   github_token = "github_pat_..."
+   github_repo = "rameshkkupusamy-png/market-agent"
+   ```
+
+4. In the app's Sharing settings, keep it private and invite the people who may view it.
 
 ## Prices
 
