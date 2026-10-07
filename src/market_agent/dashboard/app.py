@@ -9,6 +9,12 @@ import streamlit as st
 
 from market_agent.dashboard.backtests import backtest_curve, backtest_runs, backtest_settings
 from market_agent.dashboard.display import as_percent, dates_only, value_chart
+from market_agent.dashboard.explain import (
+    comparison_summary,
+    order_explanations,
+    position_explanations,
+    trade_explanations,
+)
 from market_agent.dashboard.paper import (
     closed_trades,
     equity_curves,
@@ -24,12 +30,25 @@ PAGES = ("Overview", "Today", "Positions and trades", "AI review", "Backtest")
 NO_PAPER = "No paper trading yet. Run `agent run-daily` to start both portfolios."
 
 
+def md(text: str) -> str:
+    """Escape dollar signs, which Streamlit would otherwise render as LaTeX."""
+    return text.replace("$", "\\$")
+
+
+def explanations(items) -> None:
+    for item in items:
+        with st.expander(md(item.title)):
+            st.markdown(md(item.text))
+
+
 def overview(store: Store, settings: Settings) -> None:
     st.header("Overview")
     curves = equity_curves(store, settings)
     if curves.empty:
         st.info(NO_PAPER)
         return
+    with st.container(border=True):
+        st.markdown(md(comparison_summary(store, settings) or ""))
     st.caption(
         f"Value of each paper portfolio since {curves.index[0]:%Y-%m-%d}, against the same "
         f"US${settings.risk.starting_cash:,.0f} in {settings.data.benchmark}."
@@ -65,6 +84,9 @@ def today_page(store: Store, settings: Settings) -> None:
         st.write("No orders.")
     else:
         st.dataframe(view.orders, hide_index=True)
+        st.markdown("**Why**")
+        for line in order_explanations(store, settings, view.day):
+            st.markdown(md(f"- {line}"))
     st.subheader("Report")
     st.code(view.report, language=None)
 
@@ -77,12 +99,16 @@ def positions_page(store: Store, settings: Settings) -> None:
         st.write("No open positions.")
     else:
         st.dataframe(dates_only(positions), hide_index=True)
+        st.caption("Why each share was bought")
+        explanations(position_explanations(store, settings))
     st.subheader("Closed trades")
     trades = closed_trades(store)
     if trades.empty:
         st.write("No closed trades yet.")
     else:
         st.dataframe(dates_only(as_percent(trades, ["return"])), hide_index=True)
+        st.caption("Why each share was sold")
+        explanations(trade_explanations(store, settings))
 
 
 def reviews_page(store: Store, settings: Settings) -> None:

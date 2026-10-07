@@ -68,3 +68,23 @@ def test_database_busy_or_mid_write_is_explained(tmp_path, monkeypatch):
     at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Overview")
     assert not at.exception
     assert "being written" in at.error[0].value
+
+
+def test_overview_explains_how_the_portfolios_compare(tmp_path, monkeypatch):
+    at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Overview")
+    summary = next(m.value for m in at.markdown if m.value.startswith("Since "))
+    assert "rules-only **\$10,090 (+0.9%)**" in summary  # dollars escaped: not LaTeX
+    assert "Claude has skipped 1 candidate (AAA)." in summary
+
+
+def test_positions_explain_why_each_share_was_bought_or_sold(tmp_path, monkeypatch):
+    at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Positions and trades")
+    labels = [e.label for e in at.expander]
+    assert any(label.startswith("AAA, bought") for label in labels)
+    assert any(label.startswith("BBB, sold") for label in labels)
+    assert not any("$" in label.replace("\$", "") for label in labels)
+
+
+def test_today_explains_the_orders(tmp_path, monkeypatch):
+    at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Today")
+    assert any(m.value.startswith("- **rules-only buys 5 CCC:**") for m in at.markdown)

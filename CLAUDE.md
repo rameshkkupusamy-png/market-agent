@@ -83,7 +83,9 @@ backtest-only assumptions.
   portfolios halt on the circuit breaker until `agent reset-breaker`. News for day D is cut off
   at 18:00 New York time so catch-up runs see what an on-time run would have.
 - **Dashboard** (`dashboard/`): `reviews.py`, `paper.py` and `backtests.py` turn the Store into
-  DataFrames and are tested without Streamlit; `display.py` formats them (percentages, plain
+  DataFrames and are tested without Streamlit; `explain.py` turns them into plain-English
+  sentences (the portfolios against SPY, and why each share was bought or sold, rebuilt from the
+  signal day's cached prices plus Claude's review); `display.py` formats them (percentages, plain
   dates, value charts whose y axis doesn't start at zero); `app.py` only renders. It opens the
   database with `Store(path, read_only=True)` (SQLite `mode=ro`: no schema, no migrations), and
   `agent dashboard` starts Streamlit on localhost with `MARKET_AGENT_DB` / `MARKET_AGENT_CONFIG`
