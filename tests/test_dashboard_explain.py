@@ -6,6 +6,7 @@ import pytest
 from helpers import make_bars, settings_with
 from market_agent.dashboard.explain import (
     comparison_summary,
+    how_it_works,
     order_explanations,
     position_explanations,
     trade_explanations,
@@ -203,3 +204,28 @@ def test_an_order_both_portfolios_placed_is_explained_once(store):
         "For rules + AI, Claude flagged it for a closer look (medium confidence), which doesn't "
         "stop a purchase: Strong trend. Risks it noted: Extended above its average." in ntap
     )
+
+
+def test_how_it_works_states_the_rules_from_the_settings():
+    text = " ".join(how_it_works(Settings()).split())  # ignore markdown line breaks
+    assert "closes at its highest close of the last 20 days" in text
+    assert "above its 200-day average, and its 50-day average is above its 200-day average" in text
+    assert "at least 1.5× its average of the previous 20 days" in text
+    assert "no earnings report in the next 5 trading days" in text
+    assert "most over the last 63 trading days" in text
+    assert "10 positions are already open" in text
+    assert "lose at most $100 (1% of $10,000)" in text
+    assert "at most $1,000 (10%)" in text
+    assert "20 trading days pass" in text
+    assert "15% below its peak" in text
+    assert "| **skip** |" in text
+
+
+def test_how_it_works_follows_changed_settings():
+    changed = settings_with(
+        strategy={"breakout_days": 30, "volume_ratio": 2.0}, risk={"starting_cash": 800.0}
+    )
+    text = " ".join(how_it_works(changed).split())
+    assert "highest close of the last 30 days" in text
+    assert "at least 2× its average" in text
+    assert "lose at most $8 (1% of $800)" in text

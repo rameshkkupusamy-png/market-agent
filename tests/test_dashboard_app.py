@@ -9,7 +9,7 @@ from helpers import dashboard_db
 from market_agent.store import Store
 
 APP = Path(market_agent.dashboard.__file__).parent / "app.py"
-PAGES = ("Overview", "Today", "Positions and trades", "AI review", "Backtest")
+PAGES = ("Overview", "Today", "Positions and trades", "AI review", "Backtest", "How it works")
 
 
 def open_page(monkeypatch, db, page=None):
@@ -88,3 +88,10 @@ def test_positions_explain_why_each_share_was_bought_or_sold(tmp_path, monkeypat
 def test_today_explains_the_orders(tmp_path, monkeypatch):
     at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "Today")
     assert any(m.value.startswith("- **rules-only buys 5 CCC:**") for m in at.markdown)
+
+
+def test_how_it_works_page_explains_the_rules(tmp_path, monkeypatch):
+    at = open_page(monkeypatch, dashboard_db(tmp_path / "market.db"), "How it works")
+    text = " ".join(m.value for m in at.markdown)
+    assert "highest close of the last 20 days" in text
+    assert "\$100" in text  # dollars escaped: not LaTeX

@@ -16,7 +16,7 @@ from market_agent.dashboard.paper import equity_curves, latest_portfolios
 from market_agent.indicators import add_indicators
 from market_agent.paper import PORTFOLIOS
 from market_agent.portfolio import Portfolio, Trade, portfolio_from_json
-from market_agent.settings import Settings
+from market_agent.settings import Settings, StrategySettings
 from market_agent.store import Store
 
 NAMES = {"rules-only": "rules-only", "rules+ai": "rules + AI"}
@@ -334,3 +334,115 @@ def order_explanations(store: Store, settings: Settings, day: pd.Timestamp) -> l
             why = f"{reason}."
         lines.append(f"**{who} {verb} {shares} {ticker}:** {why}")
     return lines
+
+
+# --- how the agent works -----------------------------------------------------------------------
+
+
+def _number(value: float) -> str:
+    return f"{value:,.0f}" if value == int(value) else f"{value:,.2f}".rstrip("0").rstrip(".")
+
+
+def _screening_table(s: StrategySettings) -> str:
+    rows = [
+        (
+            "Breakout",
+            f"it closes at its highest close of the last {s.breakout_days} days",
+            "the price is pushing to new highs",
+        ),
+        (
+            "Uptrend",
+            f"it closes above its {s.sma_slow}-day average, and its {s.sma_fast}-day average "
+            f"is above its {s.sma_slow}-day average",
+            "only buy shares already in a longer uptrend",
+        ),
+        (
+            "Volume",
+            f"that day's volume is at least {s.volume_ratio:g}× its average of the previous "
+            f"{s.volume_days} days",
+            "the move has real buying behind it",
+        ),
+        ("Price", f"it closes above ${_number(s.min_price)}", "no very cheap shares"),
+        (
+            "Liquidity",
+            f"it trades over ${s.min_traded_value / 1e6:,.0f} million a day on average",
+            "easy to buy and sell",
+        ),
+        (
+            "Earnings",
+            f"no earnings report in the next {s.earnings_buffer_days} trading days",
+            "avoids surprise jumps on results",
+        ),
+    ]
+    lines = ["| Rule | What it checks | Why |", "|---|---|---|"]
+    return "\n".join(lines + [f"| {rule} | {check} | {why} |" for rule, check, why in rows])
+
+
+def how_it_works(settings: Settings) -> str:
+    """Markdown: the rules both portfolios follow, with every number taken from the settings."""
+    s, r = settings.strategy, settings.risk
+    cash = r.starting_cash
+    loss = r.risk_per_trade * cash
+    cap = r.max_position_pct * cash
+    return f"""\
+Both portfolios follow the same rules. Rules + AI adds one step: Claude reviews each candidate
+before it is bought (see the last section).
+
+### 1. Screening: which shares qualify
+
+Each evening after the US market closes, the agent checks every share that was in the S&P 500
+that day. A share becomes a **candidate** only if all of these hold:
+
+{_screening_table(s)}
+
+Candidates are ranked so that the shares that rose most over the last {s.rank_days} trading
+days come first.
+
+### 2. Limits: which candidates are bought
+
+Going down the ranked list, a candidate is passed over when:
+
+- the portfolio already holds it;
+- {r.max_positions} positions are already open;
+- {r.max_per_sector} positions are already open in its sector;
+- {s.max_new_per_day} new buys are already planned that day;
+- the circuit breaker is on: the portfolio fell {r.breaker_drawdown:.0%} below its peak, so it
+  buys nothing new until the owner resets it (`agent reset-breaker`).
+
+### 3. How many shares
+
+The number of shares is the smallest of three:
+
+- **Risk:** if the stop is hit, lose at most ${_number(loss)} ({r.risk_per_trade:.0%} of
+  ${_number(cash)}). The stop sits {s.stop_atr:g} ATR below the entry; ATR is the share's
+  average daily price range over {s.atr_days} days.
+- **Size cap:** one position is at most ${_number(cap)} ({r.max_position_pct:.0%}) of the
+  portfolio.
+- **Cash:** what the portfolio has left.
+
+These amounts use the starting ${_number(cash)}; as the portfolio's value changes, they change
+with it.
+
+### 4. The buy and the exits
+
+- The order is placed after the close and filled at the **next day's opening price**, never
+  at a price the agent had already seen.
+- Every buy and sell pays {r.slippage:.1%} slippage and a ${_number(r.commission)} commission.
+- At the fill, the **stop** is set {s.stop_atr:g} ATR below the opening price and the
+  **target** {s.target_atr:g} ATR above it.
+
+The share is sold when the price falls to the stop, when it reaches the target, or when
+{s.max_hold_days} trading days pass without either (then at the next open).
+
+### Claude's review (rules + AI only)
+
+| Verdict | Meaning | Rules + AI | Rules-only |
+|---|---|---|---|
+| **approve** | no reason to avoid it | buys | buys |
+| **flag** | a concern worth noting, not enough to block it | still buys | buys |
+| **skip** | it should be left out, e.g. a pending takeover | doesn't buy | buys |
+
+Confidence (low, medium, high) shows how sure Claude was; it doesn't change what happens. When
+the monthly cost cap is reached or there is no API key, the candidate isn't reviewed and counts
+as approved. When the review fails, it counts as flagged.
+"""

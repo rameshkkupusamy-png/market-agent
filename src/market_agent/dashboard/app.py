@@ -11,6 +11,7 @@ from market_agent.dashboard.backtests import backtest_curve, backtest_runs, back
 from market_agent.dashboard.display import as_percent, dates_only, value_chart
 from market_agent.dashboard.explain import (
     comparison_summary,
+    how_it_works,
     order_explanations,
     position_explanations,
     trade_explanations,
@@ -26,7 +27,7 @@ from market_agent.dashboard.reviews import review_table, what_if
 from market_agent.settings import Settings, load_settings
 from market_agent.store import Store
 
-PAGES = ("Overview", "Today", "Positions and trades", "AI review", "Backtest")
+PAGES = ("Overview", "Today", "Positions and trades", "AI review", "Backtest", "How it works")
 NO_PAPER = "No paper trading yet. Run `agent run-daily` to start both portfolios."
 
 
@@ -157,6 +158,11 @@ def backtest_page(store: Store, settings: Settings) -> None:
     st.json(backtest_settings(store, run_id))
 
 
+def how_it_works_page(store: Store, settings: Settings) -> None:
+    st.header("How it works")
+    st.markdown(md(how_it_works(settings)))
+
+
 def main() -> None:
     st.set_page_config(page_title="Market agent", layout="wide")
     st.sidebar.title("Market agent")
@@ -180,6 +186,7 @@ def main() -> None:
             "Positions and trades": positions_page,
             "AI review": reviews_page,
             "Backtest": backtest_page,
+            "How it works": how_it_works_page,
         }
         pages[page](store, settings)
     except sqlite3.OperationalError:
