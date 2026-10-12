@@ -7,7 +7,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from market_agent.portfolio import Portfolio
+from market_agent.broker import BarLookup
+from market_agent.portfolio import Order, Portfolio
 from market_agent.reviewer import Review
 from market_agent.strategy import Candidate
 
@@ -82,6 +83,26 @@ def fills_on(p: Portfolio, day: pd.Timestamp) -> list[str]:
         for t in p.trades
         if t.exit_day == day
     ]
+    return lines
+
+
+def unfilled_buys(
+    p: Portfolio, pending: Sequence[Order], day: pd.Timestamp, bar: BarLookup
+) -> list[str]:
+    """Buy orders from yesterday that today's open did not fill, and why."""
+    bought = {t for t, pos in p.positions.items() if pos.entry_day == day}
+    bought |= {t.ticker for t in p.trades if t.entry_day == day}
+    lines = []
+    for o in pending:
+        if o.side != "buy" or o.ticker in bought:
+            continue
+        if bar(o.ticker, day) is None:
+            why = "no price at the open"
+        elif o.ticker in p.positions:
+            why = "already held"
+        else:
+            why = "not enough cash"
+        lines.append(f"{p.name} did not buy {o.shares:g} {o.ticker}: {why}")
     return lines
 
 

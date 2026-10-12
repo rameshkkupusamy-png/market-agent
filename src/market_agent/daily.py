@@ -23,7 +23,13 @@ from market_agent.paper import (
     unexplained_jumps,
 )
 from market_agent.portfolio import Portfolio, portfolio_from_json, portfolio_to_json
-from market_agent.report import PortfolioLine, build_report, fills_on, orders_for_next_open
+from market_agent.report import (
+    PortfolioLine,
+    build_report,
+    fills_on,
+    orders_for_next_open,
+    unfilled_buys,
+)
 from market_agent.reviewer import Review, ReviewInput
 from market_agent.sessions import TradingCalendar
 from market_agent.settings import Settings
@@ -167,8 +173,10 @@ class DailyRun:
             taken = candidates
             if name == "rules+ai":
                 taken = [c for c in candidates if self._verdict(reviews, c) != "skip"]
+            pending = list(portfolio.orders)
             trade_day(sim, portfolio, day, panel, last_day, taken, sectors, s)
             fills += fills_on(portfolio, day)
+            fills += unfilled_buys(portfolio, pending, day, panel.bar)
             orders += orders_for_next_open(portfolio)
             if portfolio.halted and not was_halted:
                 alerts.append(

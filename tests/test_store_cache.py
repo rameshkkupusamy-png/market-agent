@@ -212,6 +212,23 @@ def test_empty_refetch_keeps_cached_prices(store):
     assert store.missing_tickers() == []
 
 
+def test_truncated_refetch_keeps_cached_prices(store):
+    # After a delisting Yahoo returns a single stub day instead of the whole history.
+    store.replace_prices("WBD", make_bars([10, 11, 12]), "2026-10-01")
+    source = FakePrices({"WBD": make_bars([0], start="2023-01-04")})
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2))
+    assert cache.update("WBD", date(2014, 1, 1)) is True
+    assert list(store.load_prices("WBD")["close"]) == [10.0, 11.0, 12.0]
+
+
+def test_refetch_may_start_later_when_the_requested_start_moved(store):
+    store.replace_prices("AAPL", make_bars([10, 11, 12]), "2026-10-01")
+    source = FakePrices({"AAPL": make_bars([21, 22], start="2023-01-03")})
+    cache = PriceCache(store, source, today=lambda: date(2026, 10, 2))
+    assert cache.update("AAPL", date(2023, 1, 3)) is True
+    assert list(store.load_prices("AAPL")["close"]) == [21.0, 22.0]
+
+
 def test_failed_refetch_keeps_cached_prices(store):
     store.replace_prices("AAPL", make_bars([10, 11, 12]), "2026-10-01")
 

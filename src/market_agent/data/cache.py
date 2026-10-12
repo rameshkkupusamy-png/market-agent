@@ -73,6 +73,19 @@ class PriceCache:
             log.info("%s: no price data", ticker)
             self._store.mark_missing(ticker, stamp, self._now())
             return False
+        cached = self._store.load_prices(ticker)
+        if cached is not None:
+            kept = cached.index[cached.index >= pd.Timestamp(start)]
+            if len(kept) and bars.index[0] > kept[0]:
+                # After a delisting Yahoo returns a stub of a few days: never let that wipe
+                # the history the backtest needs.
+                log.warning(
+                    "%s: download starts %s but the cache has prices from %s, keeping them",
+                    ticker,
+                    f"{bars.index[0]:%Y-%m-%d}",
+                    f"{kept[0]:%Y-%m-%d}",
+                )
+                return True
         self._store.replace_prices(ticker, bars, stamp, self._now())
         return True
 

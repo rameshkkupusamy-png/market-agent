@@ -1,7 +1,14 @@
 import pandas as pd
 
+from market_agent.panel import Bar
 from market_agent.portfolio import Order, Portfolio, Position, Trade
-from market_agent.report import PortfolioLine, build_report, fills_on, orders_for_next_open
+from market_agent.report import (
+    PortfolioLine,
+    build_report,
+    fills_on,
+    orders_for_next_open,
+    unfilled_buys,
+)
 from market_agent.reviewer import Review
 from market_agent.strategy import Candidate
 
@@ -110,4 +117,28 @@ def test_orders_for_the_next_open():
     assert orders_for_next_open(p) == [
         "rules+ai buys 5 EXPD (breakout)",
         "rules+ai sells 4 NTAP (time)",
+    ]
+
+
+def test_buys_not_filled_say_why():
+    p = Portfolio("rules-only", 50.0)
+    p.positions["NVDA"] = Position("NVDA", "Tech", 10, DAY, 120.5, 110.0, 140.0, 121.0)
+    earlier = DAY - pd.Timedelta(days=7)
+    p.positions["HELD"] = Position("HELD", "Tech", 3, earlier, 10.0, 9.0, 12.0, 10.0)
+    pending = [
+        Order("NVDA", "buy", 10, "breakout", earlier),
+        Order("WBD", "buy", 32, "breakout", earlier),
+        Order("HELD", "buy", 2, "breakout", earlier),
+        Order("PRICEY", "buy", 4, "breakout", earlier),
+        Order("HELD", "sell", 3, "time", earlier),
+    ]
+    priced = {"NVDA", "HELD", "PRICEY"}
+
+    def bar(ticker, day):
+        return Bar(1.0, 1.0, 1.0, 1.0) if ticker in priced else None
+
+    assert unfilled_buys(p, pending, DAY, bar) == [
+        "rules-only did not buy 32 WBD: no price at the open",
+        "rules-only did not buy 2 HELD: already held",
+        "rules-only did not buy 4 PRICEY: not enough cash",
     ]

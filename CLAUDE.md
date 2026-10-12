@@ -58,7 +58,8 @@ backtest-only assumptions.
 - **Data** (`data/`): `PriceSource` / `EarningsSource` are Protocols in `sources.py`; `yahoo.py`
   implements them. `cache.py` downloads each ticker at most once a day and **replaces the whole
   series** (adjusted prices change retroactively). An empty download never wipes cached prices,
-  because Yahoo also returns nothing on errors and rate limits. `agent fetch` skips former index
+  because Yahoo also returns nothing on errors and rate limits, and neither does one that starts
+  later than the cached history (after a delisting Yahoo returns a stub of a few days). `agent fetch` skips former index
   members that never had data until `data.missing_recheck_days` (30) have passed since their
   last try; current members are always downloaded.
 - **Store** (`store.py`): one SQLite file. It holds prices, earnings, fetch metadata (which also

@@ -327,3 +327,18 @@ def test_normal_moves_of_a_held_position_are_not_held_back(tmp_path):
     pos = state(w, SESSIONS[256]).positions["AAA"]
     assert pos.marked_on == SESSIONS[256] and pos.last_close == aaa_bars()["close"].iloc[256]
     assert "no split record" not in result.report
+
+
+def test_a_buy_without_a_price_at_the_open_is_reported(tmp_path):
+    # AAA stops trading the day after its breakout (e.g. a takeover closes).
+    w = make_world(tmp_path, frames={"AAA": aaa_bars().iloc[:251], "SPY": spy_bars()})
+    w.settings = settings_with(
+        data={"membership_csv": str(tmp_path / "members.csv"), "sectors_csv": "s.csv"},
+        paper={"max_missing_share": 1.0},
+    )
+    w.runner = DailyRun(w.settings, w.store, w.reviewer, NoNews())
+    run(w, after_close(250))
+    [result] = run(w, after_close(251))
+    assert state(w, SESSIONS[251]).positions == {}
+    assert "- rules-only did not buy" in result.report
+    assert "AAA: no price at the open" in result.report
